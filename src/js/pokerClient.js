@@ -30,6 +30,10 @@ var cardTemplate = {
 };
 
 
+var globalUserId;
+var globalUserName;
+var globalPlayerIndex = -1;
+
 //function makeGame(){
   //theGame = new game();
   //syncingObject = new THREE.Object3D();
@@ -43,264 +47,7 @@ var cardTemplate = {
   //return syncingObject; 
 //}
  
-function getSafeGameObj(){
-  var thisGame = Object.assign({}, theGame);
-  thisGame.players = [];
-  for(var i=0; i<theGame.players.length; i++){
-    if(theGame.players[i].prevState > theGame.players[i].state){
-          thisGame.players[i] = getSafePlayer(theGame.players[i], true);
-    }else{
-          thisGame.players[i] = getSafePlayer(theGame.players[i]);
-    }
-  }
-  
-  thisGame.judge = null;
-  thisGame.syncInstance = null;
-  thisGame.betCube = null;
-  thisGame.potHolder = null;
-  thisGame.logic = null;
-  thisGame.startGameButton = null;
-  thisGame.winCube = null; 
-  thisGame.dealingOrder = null; 
-  //thisGame.deck.perfectDeck = null; 
-  thisGame.sharedCards = {cards:getSafeCards(theGame.sharedCards)};
-  if(theGame.deck instanceof deck){
-    thisGame.shuffledDeck = {cards:getSafeCards({cards: theGame.deck.shuffledDeck})};
-  }
-  thisGame.deck = null; 
 
-  //console.log(thisGame);
-  return JSON.parse(JSON.stringify(thisGame));  
-}
-
-function getSafePlayer(thePlayer, important){
-    var player = Object.assign({}, thePlayer);
-    player.joinButton = null;
-    player.bettingui = null;
-    player.chipStack = null;
-    player.joinButton = null; 
-    player.hand = null;
-    player.startGame = null;
-    player.prevState = null;
-    if(important){
-      player.importantUpdate = true;
-    } 
-    player.cards = getSafeCards(thePlayer);
-
-  return player;
-}
-
-function getSafeCards(player){ 
-  var cards = [];
-  if(player.cards.length === 0){
-    return player.cards;  
-  }
-  
-  for(var i=0; i<player.cards.length; i++){
-    var card = Object.assign({}, player.cards[i]);
-    card.geom = null;
-    card.movementTween = null; 
-    card.image = null;
-    cards[i] = card;
-  }
-  
-  return cards;
-  
-} 
-
-
-
-
-
-
-
-
-
-var prevUpdate;
-
-function onUpdateRecieved(newVal){
-  var response = newVal.val(); 
-    console.log(response);
-   if(prevUpdate === response.title){
-     //discard this response, we've already seen it
-     return; 
-   }
-   var newGame = response.data;
-      var oldState = theGame.step;
-      var gameUpdate = false;  
-      var playerUpdate = false;
-      
-      console.group("Recieved update '"+response.title+"'");
-      //if either a game update, a player update, or an 'important' flag is passed
-      //we'll update everything 
-      if(newGame.step > theGame.step){ 
-        console.log('updating from', newGame.step, theGame.step);
-        gameUpdate = true; 
-      } 
-      
-      //have to update the players first, so that the game doesn't 'double deal' 
-        if(newGame.players && newGame.players.length){ 
-          for(var i=0; i<newGame.players.length; i++){
-          if(newGame.players[i].state > theGame.players[i].state){
-            var oldState = theGame.players[i].state;
-            
-            console.log('recieved player update', newGame.players[i]);
-            mergeDeep(theGame.players[i], newGame.players[i]);
-            console.log('player is now', theGame.players[i]);
-            theGame.players[i].state = oldState;
-            while(newGame.players[i].state > theGame.players[i].state){    //if they come part way through, they need to catch up (and go through the init steps);
-              oldState++;  
-              console.log(oldState);
-              theGame.players[i].state = oldState;
-              if(oldState !== 3){
-                theGame.players[i].renderVisuals(5000); 
-              }
-            }
-            //theGame.players[i].renderVisuals(1); 
-          }else if(newGame.players[i].importantUpdate === true){
-            mergeDeep(theGame.players[i], newGame.players[i]);
-            //theGame.players[i].renderVisuals(5000); 
-          } 
-          
-          if(theGame.players[i].cards.length >0){ 
-          console.groupCollapsed("Analyzing cards...");
-          
-          //make sure the cards all are associated with the right model
-          for(var j=0; j<theGame.players[i].cards.length; j++){ 
-            var thiscard = theGame.players[i].cards[j];
-            
-             theGame.players[i].cards[j] = theGame.deck.getCard(thiscard);
-              console.log(theGame.players[i].cards[j]);
-             console.log('ok!');
-             
-           }
-          
-           console.groupEnd(); 
-         } 
-       }
-          
-        
-      }
-      delete newGame.players;
-      var shuffledDeck = newGame.shuffledDeck.cards.slice();
-      delete newGame.shuffledDeck;
-      mergeDeep(theGame, newGame);
-      theGame.deck.shuffledDeck = shuffledDeck;
-      makePot(); 
-      if(gameUpdate){  
-          console.log('Recieved game update!', oldState, theGame.step); 
-          
-         
-        //theGame.logic.steps[theGame.step].exec(theGame);
-            
-          
-          //lot of crappy code to put the shared cards back up 
-        
-          for(var i=0; i<theGame.sharedCards.cards.length; i++){
-               theGame.sharedCards.cards[i] = theGame.deck.getCard(theGame.sharedCards.cards[i], true);
-                 
-               var toPlayerTween = new TWEEN.Tween(theGame.sharedCards.cards[i].movementTween.position).to({x:(-100-(cardTemplate.width+5)*i), y: 0, z: (100+(cardTemplate.width+5)*i)}, 2000);
-               toPlayerTween.onUpdate((function(card){
-                    return function(value1){
-                        //move the cards to the player
-                      card.geom.position.copy(card.movementTween.position);
-                    }
-               }(theGame.sharedCards.cards[i])));
-               toPlayerTween.start();
-               
-            } 
-        theGame.runStep();
-        
-      }
-      console.groupEnd();
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function isCyclic (obj) {
-  var seenObjects = [];
-
-  function detect (obj) {
-    if (obj && typeof obj === 'object') {
-      if (seenObjects.indexOf(obj) !== -1) {
-        return true;
-      }
-      seenObjects.push(obj);
-      for (var key in obj) {
-        if (obj.hasOwnProperty(key) && detect(obj[key])) {
-          console.log(obj, 'cycle at ' + key);
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  return detect(obj);
-}
-
-/**
- * Simple is object check.
- * @param item
- * @returns {boolean}
- */
-function isObject(item) {
-  return (item && typeof item === 'object' && item !== null);
-}
-
-/**
- * Deep merge two objects.
- * @param target
- * @param source
- */
-function mergeDeep(target, source) {   
-  if (isObject(target) && isObject(source)) {
-    Object.keys(source).forEach(function(key){
-      if (isObject(source[key])) {
-        if (!target[key]){
-          var newObj = {};
-          newObj[key] = {};
-          Object.assign(target, newObj);
-        }
-        mergeDeep(target[key], source[key]);
-      } else {
-        var newObj = {};
-        newObj[key] = source[key];
-        Object.assign(target, newObj); 
-      }
-    }); 
-  }
-  return target; 
-}
-
-
-
-
-
-
-
-function sendUpdate(extraData, title){
-  title = title || "";
-  console.groupCollapsed("Sending update '"+ title + "'");
-  prevUpdate = title; //this will prevent our client from processing this update
-  theGame.syncInstance.update({title: title, data: getSafeGameObj(extraData)}); 
-  console.groupEnd(); 
-}
 
 
 
@@ -313,7 +60,12 @@ function sendUpdate(extraData, title){
 
 function ready(firstInstance) { 
     window.setTimeout(function(){
-      
+    
+	altspace.getUser().then(function(result){
+		globalUserId = result.userId;
+		globalUserName = result.displayName;
+	})
+	
       
      var table = createTable(); 
     console.log(firstInstance);
@@ -324,9 +76,11 @@ function ready(firstInstance) {
     }
     if(firstInstance){ 
 
-        theGame.deck.shuffle();
+        theGame.deck.shuffle(); 
         
-        instanceBase.child('game').set({title: "Initial data dump", data: getSafeGameObj()});
+        theGame.roundRecord = [{title: "startedLevel", timestamp: Date.now(), data: getSafeGameObj()}]
+         
+        instanceBase.child('game').set({title: "Initial data dump", data: theGame.roundRecord});
 
 
     }
@@ -343,6 +97,10 @@ function ready(firstInstance) {
       
     }, 0);
 } 
+
+
+
+
 
 function createTable(){
 	var geometry = new THREE.CubeGeometry(500, 125, 500);
@@ -372,6 +130,34 @@ function createPotHolder(){
   return cylinder;
 }
 
+function createHiddenCardGeom(){
+
+   console.log('making hidden card geometry');
+
+	var geometry = new THREE.PlaneGeometry(cardTemplate.width, cardTemplate.height);
+	var material = new THREE.MeshBasicMaterial({color:'#000000'});
+    var materialBack = new THREE.MeshBasicMaterial({color:'#583f2c'});
+  
+	var cardFront = new THREE.Mesh(geometry, material);
+  
+  var cardBack = new THREE.Mesh(geometry, materialBack);
+
+  cardBack.rotation.y = Math.PI;
+  
+  var card = new THREE.Object3D();
+  card.add(cardFront);
+  card.add(cardBack);
+  
+  card.position.copy(tableOffset);
+  card.position.y += cardTemplate.height/2;
+  
+  card.addBehaviors(
+			alt.Object3DSync({position: true, rotation: true})
+		);
+  sim.scene.add(card);  
+  card.userData.hidden = true;
+  return card; 
+}
 
 function createCardGeom(theCard, doubleSided){
    doubleSided = doubleSided || false;
@@ -511,8 +297,10 @@ function player(whichPlayer){
   this.state = -1;
   this.prevState = -2;
   this.updateFunction = this.renderVisuals;
+ 
   
   //defined later
+  this.userId = null;
   this.money = 0; 
   this.hand = {};
   this.chipStack = {};
@@ -579,6 +367,9 @@ player.prototype.renderVisuals = function(timeSince){
           this.startGame.mesh.position.x = -50;  
           this.startGame.mesh.rotation.y = Math.PI/8;  
           theGame.startGameButton = this.startGame.mesh;
+          if(this.userId !== globalUserId){
+              theGame.startGameButton.visible = false;
+          }
         } 
         this.renderChips();  
         
@@ -591,7 +382,11 @@ player.prototype.renderVisuals = function(timeSince){
           this.startGame.mesh.visible = false;
         }
         for(var i=0; i<this.cards.length; i++){
-          this.cards[i] = theGame.deck.getCard(this.cards[i], false);
+            
+          //if this is the correct player, get correct card
+          this.cards[i] = theGame.deck.getCard(this.cards[i], false, globalUserId === this.userId);
+          //otherwise, get a black card
+            
           giveCard(this.cards, this.hand, i);
           window.setTimeout((function(that, index){
             return function(){ 
@@ -779,10 +574,11 @@ player.prototype.bet = function(amount){
   //this.moveChipsTo(amount, theGame.potHolder);
   makePot();
   this.renderChips();
+  sendUpdate({i:this.index, amount: amount}, "playerBet");
   theGame.nextBet(amount);
 }
 
-player.prototype.fold = function(amount){ 
+player.prototype.fold = function(){ 
   theGame.bettingOrder.splice(theGame.better, 1);
   
   for(var i=0; i<this.cards.length; i++){ 
@@ -801,6 +597,7 @@ player.prototype.fold = function(amount){
   }else{
     theGame.startBetting(); 
   }
+  sendUpdate({i:this.index}, "playerFold");
   
 }
 
@@ -1136,9 +933,24 @@ function addPlayer(ind){
     object = obj;
     object.addEventListener('cursordown', (function(i){
       return function(){
-        theGame.players[i].state = 0;
-        sendUpdate({}, "Adding new player "+i);
-      }
+	  
+		
+		if(typeof globalUserId != 'undefined'){
+			theGame.players[i].state = 0;
+			theGame.players[i].userId = globalUserId;
+            globalPlayerIndex = i;
+			sendUpdate({registerIndex: i, userId: globalUserId}, "registerPlayer");
+		}else{
+		
+			altspace.getUser().then(function(result){
+		        globalUserId = result.userId;
+				theGame.players[i].state = 0;
+				theGame.players[i].userId = globalUserId;
+                globalPlayerIndex = i;
+				sendUpdate({registerIndex: i, userId: globalUserId}, "registerPlayer");
+			});
+		}
+	  }
     }(index)));
     textObj = document.querySelector(".playerCount");
     
@@ -1161,7 +973,7 @@ function startGame(){
   
   function startGame(){
         theGame.step = 0;//do the initialization in the game controller
-        sendUpdate({}, "starting game");
+        //sendUpdate({stepUpdate: 0}, "startGame");
         theGame.runStep(); 
    }
   

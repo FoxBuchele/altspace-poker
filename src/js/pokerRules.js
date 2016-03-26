@@ -64,9 +64,10 @@ deck.prototype.dealTo = function(players, numCards){
 	}
 }
 
-deck.prototype.getCard = function(theCard, large){
+deck.prototype.getCard = function(theCard, large, visible){
   large = large || false;
-    console.log(theCard, large);
+  visible = visible || false;
+  console.log(theCard, large, visible);
 
   //console.log(theCard, (theCard instanceof card));
   
@@ -82,26 +83,40 @@ deck.prototype.getCard = function(theCard, large){
     }
   }
   
-  if(typeof thisCard.geom === 'undefined' || thisCard.geom.userData.large !== large){
-    
-    sim.scene.remove(thisCard.geom);
-    delete thisCard.geom;
-    
-    createCardGeom(thisCard, large);
-    thisCard.geom.userData.large = large;
-  }
-  if(large){
-    thisCard.geom.scale.set(1.5, 1.5, 1.5);
-    thisCard.geom.position.set(i*0.1, thisCard.geom.position.y, i*0.1);
-    thisCard.geom.rotation.set(0, Math.PI/4, 0);
-    toggleVisible(thisCard.geom, true);
-    thisCard.movementTween.rotation.copy(thisCard.geom.rotation);
-    thisCard.movementTween.position.copy(thisCard.geom.position);
+  if(!visible){
+      
+      sim.scene.remove(thisCard.geom);
+      delete thisCard.Geom;
+      
+      thisCard.geom = createHiddenCardGeom();
+      
+      thisCard.geom.position.set(0, tableOffset.y - cardTemplate.height/2 + 10, 0);
+      thisCard.geom.rotation.set(Math.PI/2, 0, 0);
+      thisCard.geom.scale.set(1, 1, 1);
+      
   }else{
-    thisCard.geom.position.set(0, tableOffset.y - cardTemplate.height/2 + 10, 0);
-    thisCard.geom.rotation.set(Math.PI/2, 0, 0);
-    thisCard.geom.scale.set(1, 1, 1);
-    toggleVisible(thisCard.geom, true);
+    
+      if(typeof thisCard.geom === 'undefined' || thisCard.geom.userData.large !== large || thisCard.geom.userData.hidden){
+
+        sim.scene.remove(thisCard.geom);
+        delete thisCard.geom;
+
+        createCardGeom(thisCard, large);
+        thisCard.geom.userData.large = large;
+      }
+      if(large){
+        thisCard.geom.scale.set(1.5, 1.5, 1.5);
+        thisCard.geom.position.set(i*0.1, thisCard.geom.position.y, i*0.1);
+        thisCard.geom.rotation.set(0, Math.PI/4, 0);
+        toggleVisible(thisCard.geom, true);
+        thisCard.movementTween.rotation.copy(thisCard.geom.rotation);
+        thisCard.movementTween.position.copy(thisCard.geom.position);
+      }else{
+        thisCard.geom.position.set(0, tableOffset.y - cardTemplate.height/2 + 10, 0);
+        thisCard.geom.rotation.set(Math.PI/2, 0, 0);
+        thisCard.geom.scale.set(1, 1, 1);
+        toggleVisible(thisCard.geom, true);
+      }
   }
   return thisCard;
 }
@@ -298,6 +313,7 @@ function game(){
     cards:[]
   };
   this.bettingPot = 0;
+  this.roundRecord = [];
 }
 
 game.prototype.start = function(){
@@ -316,7 +332,7 @@ game.prototype.start = function(){
 game.prototype.resetBetters = function(){
   var bettingOrder = [];
   for(var i=0; i<this.dealingOrder.length; i++){
-    if(this.dealingOrder[i].state >= 1 && this.dealingOrder[i].state <= 3){    //they're still in the game, but waiting
+    if(this.dealingOrder[i].state >= -1 && this.dealingOrder[i].state <= 3){    //they're still in the game, but waiting
       bettingOrder.push(i);
     }
   }
@@ -359,7 +375,7 @@ game.prototype.runStep = function(){
 game.prototype.setStep = function(theStep){
   console.log('recieving a game step update');
   this.step = theStep;
-  this.runStep();
+  this.runStep(this);
 }
 
 game.prototype.nextBet = function(){
@@ -370,11 +386,13 @@ game.prototype.nextBet = function(){
   if(this.bettingOrder.length === 1 && (this.step !== this.logic.steps.length - 2)){ 
       //take to judging
       this.step = this.logic.steps.length - 2;
-      sendUpdate({}, "Going straight to judging");
+      //sendUpdate({}, "Going straight to judging");
       this.runStep();
       return;
-  }  
+  }
+  //if they haven't folded
   if(this.dealingOrder[this.bettingOrder[this.better]].state !== 4){
+    //set them back to 'waiting' state
     this.dealingOrder[this.bettingOrder[this.better]].state = 2;
   }
   this.better++;
@@ -387,10 +405,12 @@ game.prototype.startBetting = function(){
     this.step++;
     this.better = 0;
     //sendUpdate({}, "done betting, next step");
+    sendUpdate({toStep:this.step}, "doneBetting");
     this.runStep();
   }else if(this.dealingOrder[this.bettingOrder[this.better]].state !== 3){
     this.dealingOrder[this.bettingOrder[this.better]].state = 3;
-    sendUpdate({}, this.dealingOrder[this.bettingOrder[this.better]].spot +" is now betting");
+    //sendUpdate({toPlayer: this.bettingOrder[this.better]}, "waitingFor")
+    //sendUpdate({}, this.dealingOrder[this.bettingOrder[this.better]].spot +" is now betting");
   }
 }
 
@@ -399,7 +419,7 @@ var betStep = function(game){
         game.resetBetters(); 
 				if(game.dealingOrder[game.bettingOrder[game.better]].state !== 3){
 					game.dealingOrder[game.bettingOrder[game.better]].state = 3;
-          sendUpdate({}, game.dealingOrder[game.bettingOrder[game.better]].spot +" is starting the betting");
+          //sendUpdate({}, game.dealingOrder[game.bettingOrder[game.better]].spot +" is starting the betting");
 				}
 }
 
@@ -416,7 +436,6 @@ var texasHoldEm = {
 		{   //1
 			exec: function(game){
 						//deal 2 to players
-            document.querySelector("svg .playerCount").style.display = "none";
             game.startGameButton.visible = false;
             
             //game.rotateDealers();
@@ -424,16 +443,18 @@ var texasHoldEm = {
               if(game.players[i].state > -1 && game.players[i].cards.length === 0){
                 game.deck.dealTo(game.players[i], 2);
                 game.players[i].state = 1;    //player animates their own cards 
+                sendUpdate({index: i, player: getSafePlayer(game.players[i]), deck: getSafeCards({cards: game.deck})}, "dealingCards");
               }
             }
-            sendUpdate({}, "dealing first cards"); 
         
             //takes about 5s to get the cards
             window.setTimeout(function(){
               if(game.step !== 2){
                 game.step = 2;
-                sendUpdate({}, "start betting round 1");
+                //sendUpdate({}, "start betting round 1");
+                //sendUpdate({toStep: 2});
                 game.runStep();
+                sendUpdate({toStep: 2}, "changeGameStep");
               }
             }, 5000);
             
@@ -453,7 +474,7 @@ var texasHoldEm = {
 			dealTo.push(game.sharedCards);
       if(game.sharedCards.cards.length === 0){
 		      game.deck.dealTo(dealTo, 3);
-          sendUpdate({}, "Dealing the flop");
+          //sendUpdate({}, "Dealing the flop");
       }
            for(var i=0; i<game.sharedCards.cards.length; i++){ 
                game.sharedCards.cards[i] = game.deck.getCard(game.sharedCards.cards[i], true);
@@ -472,7 +493,7 @@ var texasHoldEm = {
             window.setTimeout(function(){
               if(game.step != 4){
                 game.step = 4;
-                sendUpdate({}, "start betting round 2");
+                //sendUpdate({}, "start betting round 2");
                 game.runStep();
               }
             }, 2000); 
@@ -491,7 +512,7 @@ var texasHoldEm = {
 				dealTo.push(game.sharedCards);
         if(game.sharedCards.cards.length === 3){
 				      game.deck.dealTo(dealTo, 1);
-              sendUpdate({}, "Dealing the turn");
+             // sendUpdate({}, "Dealing the turn");
 
         }
               game.sharedCards.cards[3] = game.deck.getCard(game.sharedCards.cards[3], true);
@@ -507,7 +528,7 @@ var texasHoldEm = {
             window.setTimeout(function(){
               if(game.step != 6){
                 game.step = 6;
-                sendUpdate({}, "start betting round 3");
+                //sendUpdate({}, "start betting round 3");
                 game.runStep();
               }
             }, 2000); 
@@ -526,7 +547,7 @@ var texasHoldEm = {
 			dealTo.push(game.sharedCards);
       if(game.sharedCards.cards.length === 4){
 			  game.deck.dealTo(dealTo, 1);
-        sendUpdate({}, "Dealing the river");
+       // sendUpdate({}, "Dealing the river");
       }
        game.sharedCards.cards[4] = game.deck.getCard(game.sharedCards.cards[4], true);
        
@@ -541,7 +562,7 @@ var texasHoldEm = {
           window.setTimeout(function(){
             if(game.step !== 8){
               game.step = 8;
-              sendUpdate({}, "start betting round 4");
+             // sendUpdate({}, "start betting round 4");
               game.runStep();
             }
             }, 2000); 
@@ -567,7 +588,7 @@ var texasHoldEm = {
 						window.setTimeout(function(){
               if(game.step !== 10){
                 game.step = 10;
-                sendUpdate({}, "judging cards");
+              //  sendUpdate({}, "judging cards");
                 game.runStep();
               }
             }, 3000);
@@ -591,7 +612,7 @@ var texasHoldEm = {
           //game.rotateDealers(); 
           if(game.step !== 0){
             game.step = 0;
-            sendUpdate({}, "Next hand");
+          //  sendUpdate({}, "Next hand");
             game.runStep();
           }
         }, 2000);
