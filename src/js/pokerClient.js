@@ -59,6 +59,14 @@ var globalPlayerIndex = -1;
 
 
 function ready(firstInstance) { 
+    
+    theGame = new game();
+    theGame.deck = new deck(); 
+    for(var i=0; i<4; i++){
+       theGame.players.push(new player(i));
+    }
+    
+    
     window.setTimeout(function(){
     
 	altspace.getUser().then(function(result){
@@ -67,13 +75,9 @@ function ready(firstInstance) {
 	})
 	
       
-     var table = createTable(); 
+    createTable(); 
     console.log(firstInstance);
-    theGame = new game();
-    theGame.deck = new deck(); 
-    for(var i=0; i<4; i++){
-       theGame.players.push(new player(i));
-    }
+    
     if(firstInstance){ 
 
         theGame.deck.shuffle(); 
@@ -103,7 +107,52 @@ function ready(firstInstance) {
 
 
 function createTable(){
-	var geometry = new THREE.CubeGeometry(500, 125, 500);
+            var manager = new THREE.LoadingManager();
+             var loader = new THREE.AltOBJMTLLoader(manager);
+             var objFilename = "assets/Table/tableFinal_9.obj";
+    
+              var tableTexImg = document.createElement('img');
+              tableTexImg.src = "assets/Table/tableTex.png"; 
+	          var tableMat = new THREE.MeshBasicMaterial({map:new THREE.Texture(tableTexImg)});
+             loader.load(objFilename, function ( table ) {
+                 console.log('table loaded!', table);
+                 
+                 table.scale.set(300, 300, 300);
+                 
+                 table.rotation.set(Math.PI, 0, 0);
+                 
+                 //assign all the meshes in this object the material of the table
+                 
+                 for(var i=0; i<table.children.length; i++){
+                     var group = table.children[i];
+                     for(var j=0; j<group.children.length; j++){
+                         var child = group.children[j];
+                         child.material = tableMat;
+                         
+                     }
+                     
+                 }
+                 
+                 
+                 sim.scene.add(table);
+                 //table.position.copy(tableOffset);
+                 table.position.y -= 175;
+                 
+                /* pawn.scale.x = 10;
+                 pawn.scale.y = 10;
+                 pawn.scale.z = 10;
+                 scene = new THREE.Scene();
+                 pawn.position.x = 100;
+                 pawn.position.y = -300;
+                 pawn.position.z = 300;
+                 scene.add( pawn );
+                 addEventListeners(pawn);
+                 renderer = altspace.getThreeJSRenderer({version: '0.2.0'});
+                 animate();*/
+                 
+             } );
+            
+	/*var geometry = new THREE.CubeGeometry(500, 125, 500);
 	var material = new THREE.MeshBasicMaterial({color:'#663300'});
 	var table = new THREE.Mesh(geometry, material);
   //table.position.y = -325;
@@ -115,12 +164,8 @@ function createTable(){
   var deck = new THREE.Mesh(deckGeom, deckMat);
   deck.position.y = 75;
   table.add(deck);
-  sim.scene.add(table);
-  //table.visible = false;
-  //table.matrixAutoUpdate = false;
-  //object.updateMatrix();
+  sim.scene.add(table);*/
 
-  return table;
 }
 
 function createPotHolder(){
@@ -131,8 +176,6 @@ function createPotHolder(){
 }
 
 function createHiddenCardGeom(){
-
-   console.log('making hidden card geometry');
 
 	var geometry = new THREE.PlaneGeometry(cardTemplate.width, cardTemplate.height);
 	var material = new THREE.MeshBasicMaterial({color:'#000000'});
@@ -165,10 +208,9 @@ function createCardGeom(theCard, doubleSided){
      console.error("We already made the geometry for this card!", theCard);
      return theCard;  
    }
-   console.log('making card geometry');
 
 	var geometry = new THREE.PlaneGeometry(cardTemplate.width, cardTemplate.height);
-	var material = new THREE.MeshBasicMaterial({color:'#CCCCCC', map: new THREE.Texture(theCard.image)});
+	var material = new THREE.MeshBasicMaterial({color:'#FFFFFF', map: new THREE.Texture(theCard.image)});
   var materialBack = new THREE.MeshBasicMaterial({color:'#583f2c'});
   
 	var cardFront = new THREE.Mesh(geometry, material);
@@ -229,19 +271,22 @@ function arrangeHand(hand, spotIndex){
       case 0:
         //hand.position.x -= (fullOffset -     (cardTemplate.width+cardTemplate.padding) * i);
         hand.position.z = 225;
+        hand.userData.forward = new THREE.Vector3(0, 0, -1);
         break;
       case 1:
         hand.position.z = -225;
         hand.rotation.y = Math.PI;
-        
+        hand.userData.forward = new THREE.Vector3(-1, 0, 0);
         break;
       case 2:
         hand.rotation.y = Math.PI/2;
         hand.position.x = 225;
+        hand.userData.forward = new THREE.Vector3(0, 0, 1);
         break;
       case 3:
         hand.rotation.y = -Math.PI/2;
         hand.position.x = -225;
+        hand.userData.forward = new THREE.Vector3(1, 0, 0);
         break;
    }
   
@@ -331,14 +376,8 @@ player.prototype.renderVisuals = function(timeSince){
         }
         this.money = startingMoney;  
         
-        
-        break;
-      case 0:
-        //someone playing, they haven't started yet
-        //make buttons and UI
-         
-        
-        this.joinButton.mesh.visible = false;
+            
+            
         this.hand = new THREE.Object3D();
         
         var hideButton = this.createHideButton(); 
@@ -352,6 +391,19 @@ player.prototype.renderVisuals = function(timeSince){
         toggleVisible(this.bettingui.mesh, false); 
 
         this.hand.add(this.bettingui.mesh);
+            
+        this.renderChips();  
+        
+        arrangeHand(this.hand, this.spot);
+        sim.scene.add(this.hand);
+        
+        break;
+      case 0:
+        //someone playing, they haven't started yet
+        //make buttons and UI
+         
+        this.joinButton.mesh.visible = false;
+        
         var numPlayers = 0;
         for(var i=0; i<theGame.players.length; i++){
           if(theGame.players[i].state != -1){
@@ -371,10 +423,7 @@ player.prototype.renderVisuals = function(timeSince){
               theGame.startGameButton.visible = false;
           }
         } 
-        this.renderChips();  
         
-        arrangeHand(this.hand, this.spot);
-        sim.scene.add(this.hand);
         break;  
       case 1:
         //give cards to player
@@ -399,12 +448,10 @@ player.prototype.renderVisuals = function(timeSince){
           })(this, i), 4000);
             
         }
-        console.log('giving cards to', this, this.cards.length);
 
         break;
       case 2: 
         //waiting 
-        console.log(this, this.spot);
         toggleVisible(this.bettingui.mesh, false);
         //move the cube to someone else 
         
@@ -412,7 +459,6 @@ player.prototype.renderVisuals = function(timeSince){
       case 3:
         //this players turn to bet
         //put the bet cube over this player
-        console.log("this player is betting", this);
         toggleVisible(this.bettingui.mesh, true);
 
         theGame.betCube.visible = true;
@@ -571,11 +617,12 @@ player.prototype.moveChipsTo = function(amount, where){
 player.prototype.bet = function(amount){
   this.money -= amount;
   theGame.bettingPot += amount;
+  theGame.currentBet = amount;
   //this.moveChipsTo(amount, theGame.potHolder);
   makePot();
   this.renderChips();
-  sendUpdate({i:this.index, amount: amount}, "playerBet");
-  theGame.nextBet(amount);
+  //sendUpdate({i:theGame.players.indexOf(this), amount: amount}, "playerBet");
+  theGame.nextBet();
 }
 
 player.prototype.fold = function(){ 
@@ -597,7 +644,7 @@ player.prototype.fold = function(){
   }else{
     theGame.startBetting(); 
   }
-  sendUpdate({i:this.index}, "playerFold");
+  //sendUpdate({i:theGame.players.indexOf(this)}, "playerFold");
   
 }
 
@@ -783,6 +830,15 @@ function updatePlayers(time){
 }
 
 function main(){
+    
+    /*var testMessage = new errorMessage({
+        timeToDisappear: 3000,
+        messageType: 1,
+        message: "Player joined!",
+        pos: new THREE.Vector3(0, 0, 0),
+        rot: new THREE.Vector3()
+    });*/
+    
 	theGame.logic = texasHoldEm;
 	//theGame.players[0] = new player(0);
     theGame.giveCard = giveCard;
@@ -1200,6 +1256,31 @@ function bettingUIInteractions(pl, updateBet, buttonArray){
   this.currentBet = 0;
   this.updateBet = updateBet;
   
+  this.allowedTo = function allowedToDoThis(){
+      var allowed = this.player.userId === globalUserId;
+            if(!allowed){
+                var handObj = pl.hand;
+                var uiObj = pl.bettingui.mainMesh;
+                var pos = new THREE.Vector3();
+                pos.copy(uiObj.localToWorld(new THREE.Vector3(0, 50, 0)));
+                
+                var quat = uiObj.getWorldQuaternion();
+                
+                
+                
+                var message = "Unauthorized!";
+                var unauthorized = new errorMessage({
+                        timeToDisappear: 3000,
+                        messageType: 0,
+                        message: message,
+                        pos: pos,
+                        rot: quat,
+                        scale: 0.4
+                    });
+            }
+      
+  }
+    
   this.awake = function awake(obj){
     this.object = obj;
     this.currentBet = 0;
@@ -1272,7 +1353,6 @@ function bettingUIInteractions(pl, updateBet, buttonArray){
      })(this));
      this.ctrlArray[1].addEventListener('cursordown', (function(that){
        return function(t){
-         console.log('betting');
          that.done();
        }
      })(this));
@@ -1284,6 +1364,7 @@ function bettingUIInteractions(pl, updateBet, buttonArray){
   }
   
   this.addMoney = function addMoney(amount){
+    if(!this.allowedTo()){return false};
     if(this.currentBet + amount <= this.player.money && (this.currentBet + amount) >= 0){ //this should be the min bet actually
       this.currentBet += amount;
       this.updateBet(this.currentBet);
@@ -1293,17 +1374,22 @@ function bettingUIInteractions(pl, updateBet, buttonArray){
   }
   
   this.allIn = function allIn(){ 
+    if(!this.allowedTo()){return false};
     this.currentBet = this.player.money;
     this.updateBet(this.currentBet);
   }
   
   this.done = function done(){
-    this.player.bet(this.currentBet); 
+    if(!this.allowedTo()){return false};
+    sendUpdate({i:theGame.players.indexOf(this.player), amount: this.currentBet}, "playerBet");
+    this.player.bet(this.currentBet);
     this.currentBet = 0;
     this.updateBet(this.currentBet);
   }
   
-  this.fold = function fold(){ 
+  this.fold = function fold(){
+    if(!this.allowedTo()){return false};
+    sendUpdate({i:theGame.players.indexOf(this.player)}, "playerFold");
     this.player.fold();
     this.currentBet = 0;
     this.updateBet(this.currentBet);

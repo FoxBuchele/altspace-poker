@@ -73,22 +73,20 @@ function getSafeCards(player){
 
 function processUpdates(newUpdates){
     console.log('processing', newUpdates)
-    altspace.getUser().then(function(result){
-    console.log("apply these updates", newUpdates);
+    
     var updateType, data;
         
-    //remove any updates from newupdates that already exist in theGame.roundRecord
+    
+    
+    newUpdates.sort(function(x, y){
+        return parseInt(x.timestamp) - parseInt(y.timestamp);
+    })
+    
+    console.log("apply these updates", newUpdates);
+
+    try{
         
-    /*newUpdates = newUpdates.filter(function(element){
-        for(var i=0; i<theGame.roundRecord.length; i++){
-            if(element.timestamp === theGame.roundRecord[i].timestamp){
-                return false;
-            }
-        }
-        return true;
-        
-    })*/
-        
+    var lastMessage;
     for(var x=0; x<newUpdates.length; x++){
         updateType = newUpdates[x].title;
         data = newUpdates[x].data;
@@ -102,34 +100,111 @@ function processUpdates(newUpdates){
                 theGame.players[data.registerIndex].userId = data.userId;
                 theGame.players[data.registerIndex].state = 0;
                 theGame.players[data.registerIndex].renderVisuals(0);
+                
+               
+                /*var forwardDirection = new THREE.Vector3(0, 0, 1);
+                var matrix = new THREE.Matrix4();
+                matrix.extractRotation(handObj.matrix);
+                forwardDirection.applyMatrix4(matrix);
+                */ 
+                
+                var handObj = theGame.players[data.registerIndex].hand
+                var pos = new THREE.Vector3();
+                pos.copy(handObj.position);
+                var forwardDirection = new THREE.Vector3();
+                forwardDirection.copy(handObj.userData.forward);
+                forwardDirection.multiplyScalar(-150);
+                pos.add(forwardDirection);
+                lastMessage = {
+                    timeToDisappear: 2000,
+                    messageType: 1,
+                    message: "Player joined!",
+                    pos: pos,
+                    rot: handObj.quaternion
+                };
+                
                 break;
             case "dealingCards":
                 
-		            globalUserId = result.userId;
                     for(var i=0; i<data.player.cards.length; i++){
                         theGame.players[data.index].cards[i] = theGame.deck.getCard(data.player.cards[i], false, theGame.players[data.index].userId === globalUserId);
                     }
                     theGame.players[data.index].state = data.player.state;
                     theGame.players[data.index].renderVisuals(0);
+                    theGame.players[data.index].state = 2;
                     
+                
                 //theGame.players[data.index]
                 
                 break;
             case "startHand":
-                
+                theGame.currentAuthority = data.authority;
+                theGame.resetDealers();
+                theGame.start();
                 break;
             case "changeGameStep":
                 console.log(data);
-                theGame.setStep(data.toStep);
+                theGame.resetBetters();
+                theGame.step = data.toStep;
+                theGame.runStep();
                 break;
            /* case "waitingFor":
                 //data.toPlayer
                 break;*/
             case "playerBet":
+                
                 theGame.players[data.i].bet(data.amount);
+                
+                var handObj = theGame.players[data.i].hand
+                var pos = new THREE.Vector3();
+                pos.copy(handObj.position);
+                
+                var forwardDirection = new THREE.Vector3();
+                forwardDirection.copy(handObj.userData.forward);
+                forwardDirection.multiplyScalar(-100);
+                pos.add(forwardDirection);
+                var message;
+                if(data.amount > 0){
+                    message = "Player bet $"+data.amount+"!";
+                }else{
+                    message = "Player checked!";
+                }
+                lastMessage = {
+                        timeToDisappear: 3000,
+                        messageType: 2,
+                        message: message,
+                        pos: pos,
+                        rot: handObj.quaternion
+                    };
                 break;
             case "playerFold":
+                
                 theGame.players[data.i].fold();
+                
+                var handObj = theGame.players[data.i].hand
+                var pos = new THREE.Vector3();
+                pos.copy(handObj.position);
+                
+                var forwardDirection = new THREE.Vector3();
+                forwardDirection.copy(handObj.userData.forward);
+                forwardDirection.multiplyScalar(-100);
+                pos.add(forwardDirection);
+                var message = "Player folded...";
+                lastMessage = {
+                        timeToDisappear: 3000,
+                        messageType: 0,
+                        message: message,
+                        pos: pos,
+                        rot: handObj.quaternion
+                    };
+                
+                break;
+            case "dealSharedCards":
+                Array.prototype.push.apply(theGame.sharedCards.cards, data.sharedCards);
+                console.log(theGame.sharedCards);
+                theGame.resetBetters();
+                theGame.step = data.stepToRerun;
+                theGame.runStep();
                 break;
             default:
                 console.log("No action specified for update", updateType, data);
@@ -137,13 +212,19 @@ function processUpdates(newUpdates){
                 
         }
         
+    }
+    
+        if(typeof lastMessage !== 'undefined'){
+            var testMessage = new errorMessage(lastMessage);
+        }
         
-        
+    }
+    catch(e){
+        console.log(e, e.message);
     }
     
     Array.prototype.push.apply(theGame.roundRecord, newUpdates);
-    });
-    
+    console.log("updates are now", theGame.roundRecord, newUpdates);
 }
 
 
@@ -156,21 +237,47 @@ var prevUpdate;
 function onUpdateRecieved(newVal){
     var response = newVal.val(); 
     console.log(response);
+    
+    
    //if(prevUpdate === response.title){
      //discard this response, we've already seen it
     // return; 
    //}
       //var newGame = response.data;
-      var oldState = theGame.step;
-      var gameUpdate = false;  
-      var playerUpdate = false;
-      
-      console.group("Recieved update '"+response.data.length+"'");
-      if(theGame.roundRecord.length != response.data.length){
-          processUpdates(response.data.slice(theGame.roundRecord.length, response.data.length));
-      }else{
-          console.log("got repeat update", response.data, theGame.roundRecord);
-      }
+      //var oldState = theGame.step;
+      //var gameUpdate = false;  
+      //var playerUpdate = false;
+    
+    
+   // try { altspace.getUser().then(function(result) { console.log(result); }); } catch(e) { console.log(e); }
+    
+    
+    
+      altspace.getUser().then(function(result){
+        //console.log(result);
+        globalUserId = result.userId;
+        console.group("Recieved update '"+response.data.length+"'");
+       // if(theGame.roundRecord.length != response.data.length){
+          
+          //remove any updates from newupdates that already exist in theGame.roundRecord
+        
+        var newUpdates = response.data.filter(function(element){
+            for(var i=0; i<theGame.roundRecord.length; i++){
+                if(element.timestamp === theGame.roundRecord[i].timestamp){
+                    return false;
+                }
+            }
+            return true;
+        });
+          
+          processUpdates(newUpdates);
+        //processUpdates(response.data.slice(theGame.roundRecord.length, response.data.length));
+       // }else{
+       //     console.log("got repeat update", response.data, theGame.roundRecord);
+       // }
+        console.groupEnd();
+      });
+                              
       //if either a game update, a player update, or an 'important' flag is passed
       //we'll update everything 
      /* if(newGame.step > theGame.step){ 
@@ -268,7 +375,7 @@ function onUpdateRecieved(newVal){
         
       }
       */
-      console.groupEnd();
+      
 }
 
 
