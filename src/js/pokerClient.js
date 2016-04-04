@@ -109,34 +109,30 @@ function ready(firstInstance) {
 function createTable(){
             var manager = new THREE.LoadingManager();
              var loader = new THREE.AltOBJMTLLoader(manager);
-             var objFilename = "assets/Table/tableFinal_9.obj";
+             var objFilename = "assets/Models/PokerTable6Sided.obj";
     
               var tableTexImg = document.createElement('img');
-              tableTexImg.src = "assets/Table/tableTex.png"; 
+              tableTexImg.src = "assets/Models/TableTexture.png";  
 	          var tableMat = new THREE.MeshBasicMaterial({map:new THREE.Texture(tableTexImg)});
              loader.load(objFilename, function ( table ) {
                  console.log('table loaded!', table);
                  
                  table.scale.set(300, 300, 300);
                  
-                 table.rotation.set(Math.PI, 0, 0);
+                 
                  
                  //assign all the meshes in this object the material of the table
                  
                  for(var i=0; i<table.children.length; i++){
                      var group = table.children[i];
-                     for(var j=0; j<group.children.length; j++){
-                         var child = group.children[j];
-                         child.material = tableMat;
-                         
-                     }
+                     group.material = tableMat;
                      
                  }
                  
                  
                  sim.scene.add(table);
-                 //table.position.copy(tableOffset);
-                 table.position.y -= 175;
+                 table.position.copy(tableOffset);
+                 table.position.y -= 380;
                  
                 /* pawn.scale.x = 10;
                  pawn.scale.y = 10;

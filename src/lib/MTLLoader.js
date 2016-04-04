@@ -21,9 +21,12 @@ THREE.MTLLoader.prototype = {
 		var loader = new THREE.XHRLoader( this.manager );
 		loader.setCrossOrigin( this.crossOrigin );
 		loader.load( url, function ( text ) {
-
+            var arr = url.split('/');
+            arr.pop();
+            
+            scope.setBaseUrl(arr.join('/')+'/');
 			onLoad( scope.parse( text ) );
-
+            
 		}, onProgress, onError );
 
 	},
