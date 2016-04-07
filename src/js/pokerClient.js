@@ -1,18 +1,28 @@
 (function(){var a = window.altspace; (function insert(ss, t){for(var i in ss) {for (var j in ss[i]) {t[j] = ss[i][j];}};})([a, a.utilities,a.utilities.behaviors, a.utilities.shims], window.alt = {})})();
 
 // Setup
-var sim = alt.Simulation({
+
+var sim = altspace.utilities.Simulation({
   auto: false
 });
-var inCodePen = alt.codePen.inCodePen;
-var instanceBase = alt.sync.getInstance({
-		instanceId: null//"AltSpacePoker"
-});
-var sceneSync = alt.SceneSync(instanceBase, {
-	instantiators: {},
-	ready: ready
-});
-sim.scene.addBehavior(sceneSync);
+var inCodePen = altspace.utilities.codePen.inCodePen;
+var instanceBase;
+var sceneSync;
+
+altspace.utilities.sync.connect({
+		appId: "AltSpacePoker",
+        authorId: "Fox",
+    instanceId: null
+}).then(function(connection){
+    instanceBase = connection.instance;
+   console.log('we have the instance');
+   sceneSync = altspace.utilities.behaviors.SceneSync(instanceBase, {
+        instantiators: {},
+        ready: ready
+    })
+    sim.scene.addBehavior(sceneSync);
+    sim.scene.updateAllBehaviors();
+})
 
 
 var startingMoney = 1337;
@@ -62,7 +72,7 @@ function ready(firstInstance) {
     
     theGame = new game();
     theGame.deck = new deck(); 
-    for(var i=0; i<4; i++){
+    for(var i=0; i<6; i++){
        theGame.players.push(new player(i));
     }
     
@@ -92,10 +102,53 @@ function ready(firstInstance) {
   
       theGame.syncInstance = instanceBase.child('game');       
     
-      theGame.syncInstance.once('value', function(newValue){ 
-        main();
-        theGame.syncInstance.on('value', onUpdateRecieved);  //turns out when you implement this inside the once clause
+      theGame.syncInstance.once('value', function(newValue){
+          
+        //once we know that we've recieved the first update, load the models
+        
+        
+        console.log('loading all models');
+        var models = {
+            fileBase : ['IndicationArrow', 'BettingText', 'WinnerText', 'MenuSidepanel', 'Menu', 'CardBack', 'CardFront', 'PokerChip', 'PokerTable6Sided']
+        }
+        
+        altspace.utilities.multiloader.init({
+            baseUrl: "assets/Models"
+        })
+        var req = new altspace.utilities.multiloader.LoadRequest();
+        
+        for(var i=0; i<models.fileBase.length; i++){
+            req.objUrls.push(models.fileBase[i]+".obj");
+            req.mtlUrls.push(models.fileBase[i]+".mtl");
+        }
+        
+        theGame.models = {};
+        
+        altspace.utilities.multiloader.load(req, function(){
+            var basicMat = new THREE.MeshBasicMaterial({color: "#FFFFFF"});
+            for(var i=0; i<req.objects.length; i++){
+                
+                console.log(req.objects[i]);
+                for(var j=0; j<req.objects[i].children.length; j++){
+                     var group = req.objects[i].children[j];
+                     group.material = cardMat;
+                }
+                theGame.models[models.fileBase] = req.objects[i];
+                
+            }
+            
+            main();
+            theGame.syncInstance.on('value', onUpdateRecieved);  //turns out when you implement this inside the once clause
                                                              //It'll fire with the same update that triggered this
+            
+            
+        })
+          
+          
+          
+          
+        
+
       });
       
       
@@ -134,33 +187,8 @@ function createTable(){
                  table.position.copy(tableOffset);
                  table.position.y -= 380;
                  
-                /* pawn.scale.x = 10;
-                 pawn.scale.y = 10;
-                 pawn.scale.z = 10;
-                 scene = new THREE.Scene();
-                 pawn.position.x = 100;
-                 pawn.position.y = -300;
-                 pawn.position.z = 300;
-                 scene.add( pawn );
-                 addEventListeners(pawn);
-                 renderer = altspace.getThreeJSRenderer({version: '0.2.0'});
-                 animate();*/
-                 
              } );
             
-	/*var geometry = new THREE.CubeGeometry(500, 125, 500);
-	var material = new THREE.MeshBasicMaterial({color:'#663300'});
-	var table = new THREE.Mesh(geometry, material);
-  //table.position.y = -325;
-  table.position.copy(tableOffset);
-  table.position.y -= 75;
-	//table.scale.multiplyScalar(250);
-  var deckGeom = new THREE.CubeGeometry(cardTemplate.width, 25, cardTemplate.height);
-  var deckMat = new THREE.MeshBasicMaterial({color:'#583f2c'});
-  var deck = new THREE.Mesh(deckGeom, deckMat);
-  deck.position.y = 75;
-  table.add(deck);
-  sim.scene.add(table);*/
 
 }
 
@@ -171,69 +199,7 @@ function createPotHolder(){
   return cylinder;
 }
 
-function createHiddenCardGeom(){
 
-	var geometry = new THREE.PlaneGeometry(cardTemplate.width, cardTemplate.height);
-	var material = new THREE.MeshBasicMaterial({color:'#000000'});
-    var materialBack = new THREE.MeshBasicMaterial({color:'#583f2c'});
-  
-	var cardFront = new THREE.Mesh(geometry, material);
-  
-  var cardBack = new THREE.Mesh(geometry, materialBack);
-
-  cardBack.rotation.y = Math.PI;
-  
-  var card = new THREE.Object3D();
-  card.add(cardFront);
-  card.add(cardBack);
-  
-  card.position.copy(tableOffset);
-  card.position.y += cardTemplate.height/2;
-  
-  card.addBehaviors(
-			alt.Object3DSync({position: true, rotation: true})
-		);
-  sim.scene.add(card);  
-  card.userData.hidden = true;
-  return card; 
-}
-
-function createCardGeom(theCard, doubleSided){
-   doubleSided = doubleSided || false;
-   if(typeof theCard.geom !== "undefined"){
-     console.error("We already made the geometry for this card!", theCard);
-     return theCard;  
-   }
-
-	var geometry = new THREE.PlaneGeometry(cardTemplate.width, cardTemplate.height);
-	var material = new THREE.MeshBasicMaterial({color:'#FFFFFF', map: new THREE.Texture(theCard.image)});
-  var materialBack = new THREE.MeshBasicMaterial({color:'#583f2c'});
-  
-	var cardFront = new THREE.Mesh(geometry, material);
-  
-  var cardBack; 
-  if(doubleSided){
-    cardBack = new THREE.Mesh(geometry, material); 
-  }else{
-    cardBack = new THREE.Mesh(geometry, materialBack);
-
-  }
-  cardBack.rotation.y = Math.PI;
-  
-  var card = new THREE.Object3D();
-  card.add(cardFront);
-  card.add(cardBack);
-  
-  card.position.copy(tableOffset);
-  card.position.y += cardTemplate.height/2;
-  
-  card.addBehaviors(
-			alt.Object3DSync({position: true, rotation: true})
-		);
-  sim.scene.add(card);  
-  theCard.geom = card;
-  return card; 
-}
 
 function getCardPosition(numCards, index){
   var fullOffset = (cardTemplate.width+cardTemplate.padding)/2 * (numCards - 1);
@@ -270,20 +236,34 @@ function arrangeHand(hand, spotIndex){
         hand.userData.forward = new THREE.Vector3(0, 0, -1);
         break;
       case 1:
-        hand.position.z = -225;
-        hand.rotation.y = Math.PI;
-        hand.userData.forward = new THREE.Vector3(-1, 0, 0);
+        hand.position.x = 195;
+        hand.position.z = 112;
+        hand.rotation.y = Math.PI/3;
+        hand.userData.forward = new THREE.Vector3(0, 0, -1);
         break;
       case 2:
-        hand.rotation.y = Math.PI/2;
-        hand.position.x = 225;
-        hand.userData.forward = new THREE.Vector3(0, 0, 1);
+        hand.position.x = 195;
+        hand.position.z = -112;
+        hand.rotation.y = 2*Math.PI/3;
+        hand.userData.forward = new THREE.Vector3(0, 0, -1);
         break;
       case 3:
-        hand.rotation.y = -Math.PI/2;
-        hand.position.x = -225;
-        hand.userData.forward = new THREE.Vector3(1, 0, 0);
+        hand.position.z = -225;
+        hand.rotation.y = -Math.PI;
+        hand.userData.forward = new THREE.Vector3(0, 0, 1);
         break;
+      case 4:
+        hand.position.x = -195;
+        hand.position.z = -112;
+        hand.rotation.y = -2*Math.PI/3;
+        hand.userData.forward = new THREE.Vector3(0, 0, -1);   
+           break;
+       case 5:
+        hand.position.x = -195;
+        hand.position.z = 112;
+        hand.rotation.y = -Math.PI/3;
+       hand.userData.forward = new THREE.Vector3(0, 0, -1);    
+           break;
    }
   
 }
@@ -364,12 +344,7 @@ player.prototype.renderVisuals = function(timeSince){
     switch(this.state){
       case -1:
         //no one playing
-        if(typeof this.joinButton === "undefined"){
-          this.joinButton = new makeJoinButton(this.spot);
-          sim.scene.add(this.joinButton.mesh);
-        }else{
-          this.joinButton.mesh.visible = true;
-        }
+       
         this.money = startingMoney;  
         
             
@@ -392,7 +367,12 @@ player.prototype.renderVisuals = function(timeSince){
         
         arrangeHand(this.hand, this.spot);
         sim.scene.add(this.hand);
-        
+         if(typeof this.joinButton === "undefined"){
+          this.joinButton = new makeJoinButton(this.spot);
+          sim.scene.add(this.joinButton.mesh);
+        }else{
+          this.joinButton.mesh.visible = true;
+        }
         break;
       case 0:
         //someone playing, they haven't started yet
@@ -951,7 +931,7 @@ function numActivePlayers(){
 }
 
 function movePlayerButton(mesh, newPlayerIndex){
-  switch(newPlayerIndex){
+  /*switch(newPlayerIndex){
     case 0: 
       mesh.position.set(0, mesh.position.y, 225);
       mesh.rotation.y = 0;
@@ -972,7 +952,13 @@ function movePlayerButton(mesh, newPlayerIndex){
       console.log("Too many players!");
       mesh.visible = false;
       break;
-  }
+  }*/
+  var position = theGame.players[newPlayerIndex].hand.position;
+  var rotation = theGame.players[newPlayerIndex].hand.rotation;
+  mesh.position.copy(position);
+  mesh.rotation.copy(rotation);
+    
+    
 }
 
 function addPlayer(ind){

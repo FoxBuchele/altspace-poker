@@ -39,6 +39,46 @@ function deck(){
 			this.perfectDeck.push(new card(i, suitArray[j]));
 		}
 	}
+    //this.makeGenericCard();
+}
+
+deck.prototype.makeGenericCard = function(){
+            var manager = new THREE.LoadingManager();
+             var loader = new THREE.AltOBJMTLLoader(manager);
+             var backFilename = "assets/Models/CardBack.obj";
+             var frontFilename = "assets/Models/CardFront.obj";
+              var cardTexImg = document.createElement('img');
+              cardTexImg.src = "assets/Models/CardTexture.png";  
+	          var cardMat = new THREE.MeshBasicMaterial({map:new THREE.Texture(cardTexImg)});
+              var tempMat = new THREE.MeshBasicMaterial({color: "#FFFFFF"});
+             var scope = this;
+             loader.load(backFilename, function ( card ) {
+                 console.log('generic card loaded!', card);
+                 
+                 card.scale.set(300, 300, 300);
+                 for(var i=0; i<card.children.length; i++){
+                     var group = card.children[i];
+                     group.material = cardMat;
+                     
+                 }
+                 
+
+                 loader.load(frontFilename, function(cardfront){
+                    
+                     for(var i=0; i<cardfront.children.length; i++){
+                         var group = cardfront.children[i];
+                         group.material = tempMat;
+
+                     }
+                     card.userData.cardFace = cardfront.children[0];
+                     card.add(cardfront);
+                     sim.scene.add(card);
+                     scope.genericCard = card;
+                 })
+                 
+                 
+             } );
+
 }
 
 deck.prototype.shuffle = function(){
@@ -131,6 +171,80 @@ deck.prototype.getCard = function(theCard, large, visible){
   return thisCard;
 }
 
+
+function createHiddenCardGeom(){
+
+	var geometry = new THREE.PlaneGeometry(cardTemplate.width, cardTemplate.height);
+	var material = new THREE.MeshBasicMaterial({color:'#000000'});
+    var materialBack = new THREE.MeshBasicMaterial({color:'#583f2c'});
+  
+	var cardFront = new THREE.Mesh(geometry, material);
+  
+  var cardBack = new THREE.Mesh(geometry, materialBack);
+
+  cardBack.rotation.y = Math.PI;
+  
+  var card = new THREE.Object3D();
+  card.add(cardFront);
+  card.add(cardBack);
+  
+  card.position.copy(tableOffset);
+  card.position.y += cardTemplate.height/2;
+  
+  card.addBehaviors(
+			alt.Object3DSync({position: true, rotation: true})
+		);
+  sim.scene.add(card);  
+  card.userData.hidden = true;
+  return card; 
+}
+
+function createCardGeom(theCard, doubleSided){
+   doubleSided = doubleSided || false;
+   if(typeof theCard.geom !== "undefined"){
+     console.error("We already made the geometry for this card!", theCard);
+     return theCard;  
+   }
+
+    
+    
+    //var geometry =     
+    
+    
+    
+    var card = theGame.models.cardBack.clone();
+    
+    
+	//var geometry = new THREE.PlaneGeometry(cardTemplate.width, cardTemplate.height);
+	var material = new THREE.MeshBasicMaterial({color:'#FFFFFF', map: new THREE.Texture(theCard.image)});
+    //var materialBack = new THREE.MeshBasicMaterial({color:'#583f2c'});
+  
+	//var cardFront = new THREE.Mesh(geometry, material);
+    card.userData.cardFace.material = material;
+    /*
+  var cardBack; 
+  if(doubleSided){
+    cardBack = new THREE.Mesh(geometry, material); 
+  }else{
+    cardBack = new THREE.Mesh(geometry, materialBack);
+
+  }
+  cardBack.rotation.y = Math.PI;
+  
+  var card = new THREE.Object3D();
+  card.add(cardFront);
+  card.add(cardBack);*/
+  
+  card.position.copy(tableOffset);
+  card.position.y += cardTemplate.height/2;
+  
+  //card.addBehaviors(
+	//		alt.Object3DSync({position: true, rotation: true})
+	//	);
+  sim.scene.add(card);  
+  theCard.geom = card;
+  return card; 
+}
 
 function ruleset(){
 	this.handRanking = [];
