@@ -42,7 +42,7 @@ function deck(){
     //this.makeGenericCard();
 }
 
-deck.prototype.makeGenericCard = function(){
+/*deck.prototype.makeGenericCard = function(){
             var manager = new THREE.LoadingManager();
              var loader = new THREE.AltOBJMTLLoader(manager);
              var backFilename = "assets/Models/CardBack.obj";
@@ -72,14 +72,14 @@ deck.prototype.makeGenericCard = function(){
                      }
                      card.userData.cardFace = cardfront.children[0];
                      card.add(cardfront);
-                     sim.scene.add(card);
+                     //sim.scene.add(card);
                      scope.genericCard = card;
                  })
                  
                  
              } );
 
-}
+}*/
 
 deck.prototype.shuffle = function(){
 	this.shuffledDeck = this.perfectDeck.slice(0);
@@ -206,21 +206,25 @@ function createCardGeom(theCard, doubleSided){
      return theCard;  
    }
 
-    
+    console.log('cloning the card models');
     
     //var geometry =     
     
     
     
-    var card = theGame.models.cardBack.clone();
-    
-    
-	//var geometry = new THREE.PlaneGeometry(cardTemplate.width, cardTemplate.height);
+    var cardback = theGame.models.CardBack.clone();
+    var cardfront = theGame.models.CardFront.clone();
+    //uv for the card front is flipped, so we have to do this for some reason
+    cardfront.scale.set(-300, 300, 300);
 	var material = new THREE.MeshBasicMaterial({color:'#FFFFFF', map: new THREE.Texture(theCard.image)});
-    //var materialBack = new THREE.MeshBasicMaterial({color:'#583f2c'});
-  
-	//var cardFront = new THREE.Mesh(geometry, material);
-    card.userData.cardFace.material = material;
+    for(var j=0; j<cardfront.children.length; j++){
+        var mesh = cardfront.children[j];
+        mesh.material = material;
+                    
+    }
+    var card = new THREE.Object3D();
+    card.add(cardfront);
+    card.add(cardback);
     /*
   var cardBack; 
   if(doubleSided){

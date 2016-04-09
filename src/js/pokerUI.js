@@ -196,6 +196,318 @@ function rgb2hex(rgb){
 
 
 
+var plusImg = document.createElement('img');
+plusImg.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/plus.png";
+plusImg.threeTex = new THREE.Texture(plusImg);
+
+var minusImg = document.createElement('img');
+minusImg.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/minus.png";
+minusImg.threeTex = new THREE.Texture(minusImg);
+
+var addMaterial = new THREE.MeshBasicMaterial({map:plusImg.threeTex});
+var removeMaterial = new THREE.MeshBasicMaterial({map:minusImg.threeTex});
+
+var betImg = {
+  img: document.createElement('img'),
+  outImg: document.createElement('img')
+};
+betImg.outImg.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/betUI-bet2.png";
+betImg.img.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/betUI-bet.png";
+betImg.threeMat = new THREE.MeshBasicMaterial({map:new THREE.Texture(betImg.img)});
+
+var foldImg = {
+  img: document.createElement('img'),
+  outImg: document.createElement('img')
+};
+foldImg.outImg.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/betUI-fold2.png";
+foldImg.img.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/betUI-fold.png";
+foldImg.threeMat = new THREE.MeshBasicMaterial({map:new THREE.Texture(foldImg.img)});
+
+var inImg = {
+  img: document.createElement('img'),
+  outImg: document.createElement('img')
+};
+inImg.outImg.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/betUI-all_In.png";
+inImg.img.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/betUI-all_In.png";
+inImg.threeMat = new THREE.MeshBasicMaterial({map:new THREE.Texture(inImg.img)});
+
+
+function bettingUI(player){
+      this.canvasEl = document.createElement('canvas');
+      this.canvasEl.width = 150;
+      this.canvasEl.height = 200;
+      this.textArea = this.canvasEl.getContext('2d');
+      //document.body.appendChild(canvasEl);
+      this.fontSize = 28;
+      this.fontPadding = 10;
+      this.textArea.font = this.fontSize+"px Arial";
+      this.textArea.fillStyle = "rgba(255,255,255, 1)";
+      this.element = this.canvasEl;
+      this.textArea.textAlign = "center";
+      //this.textArea.fillText("BET", this.element.width/2, this.fontSize);
+      this.textArea.fill();
+
+      this.textArea.beginPath();
+      this.textArea.rect(0, 60, 150, 150); 
+      this.textArea.fillStyle = "grey";
+      this.textArea.fill(); 
+
+      //set the color back to white
+      this.textArea.fillStyle = "rgba(255,255,255, 1)";
+
+
+      this.material = new THREE.MeshBasicMaterial({map: new THREE.Texture(this.element)}); 
+
+      //this.mainMesh = new THREE.Mesh(new THREE.PlaneGeometry(this.element.width/4, this.element.height/4), this.material);
+      //this.backMesh = new THREE.Mesh(new THREE.PlaneGeometry(this.element.width/4, this.element.height/4), this.material);
+      //this.backMesh.rotation.set(0, Math.PI, 0);
+      //this.backMesh.position.z -= 0.1;
+    
+      this.mainMesh = theGame.models.Menu.clone();
+      this.mainMesh.scale.set(200, 200, 200);
+      this.mainMesh.position.z -= 4;
+      this.mesh = new THREE.Object3D();
+      //this.mesh.add(this.backMesh);
+      this.mesh.add(this.mainMesh);
+      var spacing = 25; 
+      var chLarge = makeChipStack(125, spacing);
+      var chSmall = makeChipStack(16, spacing); 
+      chLarge.rotation.set(Math.PI/2, Math.PI/2, 0);
+      chSmall.rotation.set(Math.PI/2, Math.PI/2, 0);
+      chLarge.position.set(0, 0, 0); 
+      chSmall.position.set(0, spacing*2, 0);
+      var chips = new THREE.Object3D();
+      chips.add(chLarge);
+      chips.add(chSmall);
+
+      chips.scale.set(0.4, 0.4, 0.4);
+      chips.position.set(0, -62, 0);
+      this.mesh.add(chips); 
+      /*
+
+      white - 1
+      red - 5
+      blue - 10
+      green - 25
+      black - 100
+
+      */
+
+      var betButtons = new THREE.Object3D();
+
+      var bd = [10, 5];
+
+      var addButtonArray = [];
+      var removeButtonArray = [];
+      var ctrlButtonArray = [];
+
+      for(var i=0; i<5; i++){
+        var yoffset = 8.5*i;
+        var addButton = new THREE.Mesh(new THREE.PlaneGeometry(bd[0], bd[1]), addMaterial);
+        addButton.position.x += 25;
+        addButton.position.y -= yoffset;
+        betButtons.add(addButton);
+        addButtonArray.push(addButton);
+        var removeButton = new THREE.Mesh(new THREE.PlaneGeometry(bd[0], bd[1]), removeMaterial);
+        removeButton.position.y -= yoffset;
+        betButtons.add(removeButton);
+        removeButtonArray.push(removeButton);
+      }
+
+      //make bet, fold, all in buttons
+
+      var ctrlBet = new THREE.Mesh(new THREE.PlaneGeometry(17.2, 25.6), betImg.threeMat);
+      var ctrlFold = new THREE.Mesh(new THREE.PlaneGeometry(17.2, 12.8), foldImg.threeMat);
+      var ctrlIn = new THREE.Mesh(new THREE.PlaneGeometry(17.2, 12.8), inImg.threeMat);
+      ctrlFold.position.set(-17.2, -6.4, 0);
+      ctrlIn.position.set(17.2, -6.4, 0);
+
+      var ctrlHolder = new THREE.Object3D();
+      ctrlHolder.add(ctrlBet)
+      ctrlHolder.add(ctrlFold)
+      ctrlHolder.add(ctrlIn)
+
+      ctrlButtonArray = [ctrlFold, ctrlBet, ctrlIn];
+
+      ctrlHolder.position.set(0, 44, 0);
+      ctrlHolder.scale.set(1.15, 1.15, 1.15);
+      this.mesh.add(ctrlHolder);
+
+
+      betButtons.scale.set(1.175, 1.175, 1.175);
+      betButtons.position.set(-15, 2, 0);
+      this.mesh.add(betButtons);
+
+      this.mesh.position.y -= 120; 
+      this.mesh.position.x = 80;
+      this.mesh.position.z -= 50;
+
+      this.mesh.addBehaviors(new bettingUIInteractions(player, (function(thisUI){
+                  return function(t){
+                      thisUI.updateBet(t);
+                  }
+                })(this), [addButtonArray, removeButtonArray, ctrlButtonArray]));
+      this.mesh.updateBehaviors(0);
+      this.updateBet(0);
+}
+
+bettingUI.prototype.updateBet = function(amount){ 
+       this.textArea.clearRect(0, 0, 150, 60);
+       this.textArea.fillText("$"+amount, this.element.width/2, this.fontSize*1.5);
+       this.material.map.needsUpdate = true; 
+       this.material.needsUpdate = true; 
+}
+
+function bettingUIInteractions(pl, updateBet, buttonArray){
+      this.object; 
+      this.player = pl;
+      this.addArr = buttonArray[0];
+      this.subArr = buttonArray[1];
+      this.ctrlArray = buttonArray[2];
+      this.currentBet = 0;
+      this.updateBet = updateBet;
+
+      this.allowedTo = function allowedToDoThis(){
+          var allowed = this.player.userId === globalUserId;
+                if(!allowed){
+                    var handObj = pl.hand;
+                    var uiObj = pl.bettingui.mainMesh;
+                    var pos = new THREE.Vector3();
+                    pos.copy(uiObj.localToWorld(new THREE.Vector3(0, 50, 0)));
+
+                    var quat = uiObj.getWorldQuaternion();
+
+
+
+                    var message = "Unauthorized!";
+                    var unauthorized = new errorMessage({
+                            timeToDisappear: 3000,
+                            messageType: 0,
+                            message: message,
+                            pos: pos,
+                            rot: quat,
+                            scale: 0.4
+                        });
+                }
+      
+  }
+    
+  this.awake = function awake(obj){
+    this.object = obj;
+    this.currentBet = 0;
+     this.addArr[0].addEventListener('cursordown', (function(that){
+       return function(t){
+         that.addMoney(1);
+       }
+     })(this));
+     this.addArr[1].addEventListener('cursordown', (function(that){
+       return function(t){
+         that.addMoney(5);
+       }
+     })(this));
+     this.addArr[2].addEventListener('cursordown', (function(that){
+       return function(t){
+         that.addMoney(10);
+
+       }
+     })(this));
+     this.addArr[3].addEventListener('cursordown', (function(that){
+       return function(t){
+         that.addMoney(25);
+       }
+     })(this));
+     this.addArr[4].addEventListener('cursordown', (function(that){
+       return function(t){
+         that.addMoney(100);
+       }
+     })(this));
+    
+    
+    
+    
+    this.subArr[0].addEventListener('cursordown', (function(that){
+       return function(t){
+         that.addMoney(-1); 
+       }
+     })(this));
+     this.subArr[1].addEventListener('cursordown', (function(that){
+       return function(t){
+         that.addMoney(-5);
+       }
+     })(this));
+     this.subArr[2].addEventListener('cursordown', (function(that){
+       return function(t){
+         that.addMoney(-10);
+
+       }
+     })(this));
+     this.subArr[3].addEventListener('cursordown', (function(that){
+       return function(t){
+         that.addMoney(-25);
+       }
+     })(this));
+     this.subArr[4].addEventListener('cursordown', (function(that){
+       return function(t){
+         that.addMoney(-100);
+       }
+     })(this));
+    
+    
+    
+    
+    //fold, bet, all-in
+    
+     this.ctrlArray[0].addEventListener('cursordown', (function(that){
+       return function(t){
+         that.fold();
+       }
+     })(this));
+     this.ctrlArray[1].addEventListener('cursordown', (function(that){
+       return function(t){
+         that.done();
+       }
+     })(this));
+     this.ctrlArray[2].addEventListener('cursordown', (function(that){
+       return function(t){
+         that.allIn();
+       }
+     })(this));
+  }
+  
+  this.addMoney = function addMoney(amount){
+    if(!this.allowedTo()){return false};
+    if(this.currentBet + amount <= this.player.money && (this.currentBet + amount) >= 0){ //this should be the min bet actually
+      this.currentBet += amount;
+      this.updateBet(this.currentBet);
+    }else{
+      console.log('dont have the funds', this.currentBet + amount , (this.currentBet + amount) >= 0);
+    }
+  }
+  
+  this.allIn = function allIn(){ 
+    if(!this.allowedTo()){return false};
+    this.currentBet = this.player.money;
+    this.updateBet(this.currentBet);
+  }
+  
+  this.done = function done(){
+    if(!this.allowedTo()){return false};
+    sendUpdate({i:theGame.players.indexOf(this.player), amount: this.currentBet}, "playerBet");
+    this.player.bet(this.currentBet);
+    this.currentBet = 0;
+    this.updateBet(this.currentBet);
+  }
+  
+  this.fold = function fold(){
+    if(!this.allowedTo()){return false};
+    sendUpdate({i:theGame.players.indexOf(this.player)}, "playerFold");
+    this.player.fold();
+    this.currentBet = 0;
+    this.updateBet(this.currentBet);
+  } 
+
+}
+
 
 
 
