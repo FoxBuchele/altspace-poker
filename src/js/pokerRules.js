@@ -212,19 +212,28 @@ function createCardGeom(theCard, doubleSided){
     
     
     
-    var cardback = theGame.models.CardBack.clone();
     var cardfront = theGame.models.CardFront.clone();
     //uv for the card front is flipped, so we have to do this for some reason
     cardfront.scale.set(-300, 300, 300);
 	var material = new THREE.MeshBasicMaterial({color:'#FFFFFF', map: new THREE.Texture(theCard.image)});
     for(var j=0; j<cardfront.children.length; j++){
         var mesh = cardfront.children[j];
-        mesh.material = material;
-                    
+        mesh.material = material;            
     }
     var card = new THREE.Object3D();
+    
     card.add(cardfront);
-    card.add(cardback);
+    
+    if(doubleSided){
+        var othercardfront = cardfront.clone();
+        othercardfront.rotation.y = Math.PI;
+        card.add(othercardfront);
+    }else{
+        var cardback = theGame.models.CardBack.clone();
+        card.add(cardback);
+    }
+    
+    //card.add(cardback);
     /*
   var cardBack; 
   if(doubleSided){
@@ -545,7 +554,7 @@ game.prototype.startBetting = function(){
 }
 
 var betStep = function(game){
-        game.betCube.visible = true;
+        toggleVisible(game.betCube, true);// game.betCube.visible = true;
         game.currentBet = 0;
         game.resetBetters(); 
 				if(game.dealingOrder[game.bettingOrder[game.better]].state !== 3){
@@ -572,9 +581,12 @@ var texasHoldEm = {
       }
     },
 		{   //1
+            execClient: function(game){
+                game.startGameButton.visible = false;
+            },
 			exec: function(game){
 						//deal 2 to players
-            game.startGameButton.visible = false;
+            
             
             if(game.currentAuthority === globalUserId){
                 
@@ -602,18 +614,30 @@ var texasHoldEm = {
             }
                 
 			}
+            
 		},
 		{ //2
 			exec: betStep
 		},
 		{ //3
+            execClient: function(game){
+                game.betCube.visible = false;
+                for(var i=0; i<game.sharedCards.cards.length; i++){ 
+                   game.sharedCards.cards[i] = game.deck.getCard(game.sharedCards.cards[i], true, true);
+                   var toPlayerTween = new TWEEN.Tween(game.sharedCards.cards[i].movementTween.position).to({x:(-100-(cardTemplate.width+5)*i), y: 0, z: (100+(cardTemplate.width+5)*i)}, 2000);
+                   toPlayerTween.onUpdate((function(card){
+                      return function(value1){
+                          //move the cards to the player
+                        card.geom.position.copy(card.movementTween.position);
+                      }
+                    }(game.sharedCards.cards[i])));
+                   toPlayerTween.start();
+                }
+            
+            },
 			exec: function(game){
-            game.betCube.visible = false;
-                
-                
-            if(game.currentAuthority === globalUserId){   
-                
-                //make a show of discarding a card
+                                
+                //make a show of discarding a card?
                 var dealTo = [];
                 /*for(var i=0; i<game.bettingOrder.length; i++){
                     dealTo.push(game.dealingOrder[game.bettingOrder[i]]);
@@ -634,37 +658,25 @@ var texasHoldEm = {
 
                 }, 2000);
                 
-            }
-                
-                
-            //if we haven't been given shared cards, don't run this part, it'll run when we receive the cards
-                
-            if(game.sharedCards.cards.length === 3){
-                for(var i=0; i<game.sharedCards.cards.length; i++){ 
-                   game.sharedCards.cards[i] = game.deck.getCard(game.sharedCards.cards[i], true, true);
-                   var toPlayerTween = new TWEEN.Tween(game.sharedCards.cards[i].movementTween.position).to({x:(-100-(cardTemplate.width+5)*i), y: 0, z: (100+(cardTemplate.width+5)*i)}, 2000);
-                   toPlayerTween.onUpdate((function(card){
-                      return function(value1){
-                          //move the cards to the player
-                        card.geom.position.copy(card.movementTween.position);
-                      }
-                    }(game.sharedCards.cards[i])));
-                   toPlayerTween.start();
-                }
-
-              }
-                
-                
-			}
 		},
 		{ //4
 			exec: betStep
 		},
 		{ //5
+            execClient: function(game){
+    				game.betCube.visible = false;
+                    game.sharedCards.cards[3] = game.deck.getCard(game.sharedCards.cards[3], true, true);
+
+                       var toPlayerTween = new TWEEN.Tween(game.sharedCards.cards[3].movementTween.position).to({x:(-100-(cardTemplate.width+5)*3), y: 0, z: (100+(cardTemplate.width+5)*3)}, 2000);
+                       toPlayerTween.onUpdate((function(card){
+                          return function(value1){
+                              //move the cards to the player
+                            card.geom.position.copy(card.movementTween.position);
+                          }
+                        }(game.sharedCards.cards[3])));
+                       toPlayerTween.start();
+            },
 			exec: function(game){
-				game.betCube.visible = false;
-                
-                if(game.currentAuthority === globalUserId){
                 
                     var dealTo = [];
                     dealTo.push(game.sharedCards);
@@ -678,25 +690,6 @@ var texasHoldEm = {
                       
                     }, 2000); 
                     
-                }
-                
-                //if we haven't been given shared cards, don't run this part, it'll run when we receive the cards
-
-                
-                if(game.sharedCards.cards.length === 4){
-                
-                      game.sharedCards.cards[3] = game.deck.getCard(game.sharedCards.cards[3], true, true);
-
-                       var toPlayerTween = new TWEEN.Tween(game.sharedCards.cards[3].movementTween.position).to({x:(-100-(cardTemplate.width+5)*3), y: 0, z: (100+(cardTemplate.width+5)*3)}, 2000);
-                       toPlayerTween.onUpdate((function(card){
-                          return function(value1){
-                              //move the cards to the player
-                            card.geom.position.copy(card.movementTween.position);
-                          }
-                        }(game.sharedCards.cards[3])));
-                       toPlayerTween.start();
-                    
-                }
             
 			}
 		},
@@ -704,9 +697,21 @@ var texasHoldEm = {
 			exec: betStep
 		},
 		{ //7
+            execClient: function(game){
+                 game.betCube.visible = false;
+                 game.sharedCards.cards[4] = game.deck.getCard(game.sharedCards.cards[4], true, true);
+
+                       var toPlayerTween = new TWEEN.Tween(game.sharedCards.cards[4].movementTween.position).to({x:(-100-(cardTemplate.width+5)*4), y: 0, z: (100+(cardTemplate.width+5)*4)}, 2000);
+                       toPlayerTween.onUpdate((function(card){
+                          return function(value1){
+                              //move the cards to the player
+                            card.geom.position.copy(card.movementTween.position);
+                          }
+                        }(game.sharedCards.cards[4])));
+                       toPlayerTween.start();
+            },
 			exec: function(game){
                 
-                game.betCube.visible = false;
                 
                 if(game.currentAuthority === globalUserId){
                 
@@ -724,32 +729,17 @@ var texasHoldEm = {
                     
                 }
                 
-                //if we haven't been given shared cards, don't run this part, it'll run when we receive the cards
-
-                
-                if(game.sharedCards.cards.length === 5){
-                
-                      game.sharedCards.cards[4] = game.deck.getCard(game.sharedCards.cards[4], true, true);
-
-                       var toPlayerTween = new TWEEN.Tween(game.sharedCards.cards[4].movementTween.position).to({x:(-100-(cardTemplate.width+5)*4), y: 0, z: (100+(cardTemplate.width+5)*4)}, 2000);
-                       toPlayerTween.onUpdate((function(card){
-                          return function(value1){
-                              //move the cards to the player
-                            card.geom.position.copy(card.movementTween.position);
-                          }
-                        }(game.sharedCards.cards[4])));
-                       toPlayerTween.start();
-                    
-                }
 			}
 		},
 		{ //8
 			exec: betStep
 		},
 		{ //9
+            execClient: function(game){
+                 game.betCube.visible = false;
+            },
 			exec: function(game){
         
-                game.betCube.visible = false;
             
                 if(game.currentAuthority === globalUserId){    
                     var highestHand = {value:-2};

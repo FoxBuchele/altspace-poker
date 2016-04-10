@@ -203,8 +203,8 @@ function processUpdates(newUpdates){
                 Array.prototype.push.apply(theGame.sharedCards.cards, data.sharedCards);
                 console.log(theGame.sharedCards);
                 theGame.resetBetters();
-                theGame.step = data.stepToRerun;
-                theGame.runStep();
+                //theGame.step = data.stepToRerun;
+                //theGame.runStep();
                 break;
             default:
                 console.log("No action specified for update", updateType, data);

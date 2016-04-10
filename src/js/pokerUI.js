@@ -234,23 +234,23 @@ inImg.threeMat = new THREE.MeshBasicMaterial({map:new THREE.Texture(inImg.img)})
 
 function bettingUI(player){
       this.canvasEl = document.createElement('canvas');
-      this.canvasEl.width = 150;
-      this.canvasEl.height = 200;
+      this.canvasEl.width = 218;
+      this.canvasEl.height = 63;
       this.textArea = this.canvasEl.getContext('2d');
       //document.body.appendChild(canvasEl);
-      this.fontSize = 28;
-      this.fontPadding = 10;
+      this.fontSize = 32;
+      this.fontPadding = (63/2 + 32/2) - 5;
       this.textArea.font = this.fontSize+"px Arial";
-      this.textArea.fillStyle = "rgba(255,255,255, 1)";
+      //this.textArea.fillStyle = "rgba(255,255,255, 1)";
       this.element = this.canvasEl;
       this.textArea.textAlign = "center";
       //this.textArea.fillText("BET", this.element.width/2, this.fontSize);
-      this.textArea.fill();
+      //this.textArea.fill();
 
-      this.textArea.beginPath();
-      this.textArea.rect(0, 60, 150, 150); 
-      this.textArea.fillStyle = "grey";
-      this.textArea.fill(); 
+     // this.textArea.beginPath();
+      //this.textArea.rect(0, 60, 150, 150); 
+      //this.textArea.fillStyle = "grey";
+      //this.textArea.fill(); 
 
       //set the color back to white
       this.textArea.fillStyle = "rgba(255,255,255, 1)";
@@ -258,17 +258,20 @@ function bettingUI(player){
 
       this.material = new THREE.MeshBasicMaterial({map: new THREE.Texture(this.element)}); 
 
-      //this.mainMesh = new THREE.Mesh(new THREE.PlaneGeometry(this.element.width/4, this.element.height/4), this.material);
+      this.countMesh = new THREE.Mesh(new THREE.PlaneGeometry(this.element.width/4, this.element.height/4), this.material);
+      this.countMesh.position.y += 18;
+      this.countMesh.position.z -= 1.6;
       //this.backMesh = new THREE.Mesh(new THREE.PlaneGeometry(this.element.width/4, this.element.height/4), this.material);
       //this.backMesh.rotation.set(0, Math.PI, 0);
       //this.backMesh.position.z -= 0.1;
     
       this.mainMesh = theGame.models.Menu.clone();
       this.mainMesh.scale.set(200, 200, 200);
-      this.mainMesh.position.z -= 4;
+      this.mainMesh.position.z -= 7;
       this.mesh = new THREE.Object3D();
       //this.mesh.add(this.backMesh);
       this.mesh.add(this.mainMesh);
+      this.mesh.add(this.countMesh);
       var spacing = 25; 
       var chLarge = makeChipStack(125, spacing);
       var chSmall = makeChipStack(16, spacing); 
@@ -353,7 +356,7 @@ function bettingUI(player){
 
 bettingUI.prototype.updateBet = function(amount){ 
        this.textArea.clearRect(0, 0, 150, 60);
-       this.textArea.fillText("$"+amount, this.element.width/2, this.fontSize*1.5);
+       this.textArea.fillText("$"+amount, this.element.width/2, this.fontPadding);
        this.material.map.needsUpdate = true; 
        this.material.needsUpdate = true; 
 }
@@ -389,6 +392,8 @@ function bettingUIInteractions(pl, updateBet, buttonArray){
                             scale: 0.4
                         });
                 }
+          console.log('did a test and it came back', allowed);
+          return allowed;
       
   }
     
@@ -475,6 +480,7 @@ function bettingUIInteractions(pl, updateBet, buttonArray){
   }
   
   this.addMoney = function addMoney(amount){
+    console.log('got a click event');
     if(!this.allowedTo()){return false};
     if(this.currentBet + amount <= this.player.money && (this.currentBet + amount) >= 0){ //this should be the min bet actually
       this.currentBet += amount;
@@ -511,6 +517,162 @@ function bettingUIInteractions(pl, updateBet, buttonArray){
 
 
 
+function addPlayer(ind){
+  var index = ind;
+  var object; 
+  var textObj;
+  
+  
+  function awake(obj){
+    object = obj;
+    object.addEventListener('cursordown', (function(i){
+      return function(){
+	  
+		
+		if(typeof globalUserId != 'undefined'){
+			theGame.players[i].state = 0;
+			theGame.players[i].userId = globalUserId;
+            globalPlayerIndex = i;
+			sendUpdate({registerIndex: i, userId: globalUserId}, "registerPlayer");
+		}else{
+		
+			altspace.getUser().then(function(result){
+		        globalUserId = result.userId;
+				theGame.players[i].state = 0;
+				theGame.players[i].userId = globalUserId;
+                globalPlayerIndex = i;
+				sendUpdate({registerIndex: i, userId: globalUserId}, "registerPlayer");
+			});
+		}
+	  }
+    }(index)));
+    textObj = document.querySelector(".playerCount");
+    
+  }
+  
+  return {awake: awake}; 
+  
+  
+}
+
+function startGame(player){
+  
+  var object;
+  var pl = player;
+  function awake(obj){
+    object = obj;
+    object.addEventListener('cursordown', startGame);
+    
+  }
+    
+  function allowedToDoThis(){
+        var allowed = (pl.userId === globalUserId);
+        if(!allowed){
+             var pos = new THREE.Vector3();
+             pos.copy(object.localToWorld(new THREE.Vector3(0, 50, 0)));
+
+             var quat = object.getWorldQuaternion();
+
+
+
+                var message = "Unauthorized!";
+                var unauthorized = new errorMessage({
+                        timeToDisappear: 3000,
+                        messageType: 0,
+                        message: message,
+                        pos: pos,
+                        rot: quat,
+                        scale: 0.4
+                    });
+        }else if(numActivePlayers() < 2){
+            var pos = new THREE.Vector3();
+             pos.copy(object.localToWorld(new THREE.Vector3(0, 20, 0)));
+
+             var quat = object.getWorldQuaternion();
+
+
+
+                var message = "Need more players!";
+                var unauthorized = new errorMessage({
+                        timeToDisappear: 2000,
+                        messageType: 0,
+                        message: message,
+                        pos: pos,
+                        rot: quat,
+                        scale: 0.4
+                    });
+        }
+      
+         console.log(pl);
+          return (allowed && (numActivePlayers() >= 2));
+      
+  }
+  
+  function startGame(){
+      
+      
+      if(allowedToDoThis()){
+        theGame.step = 0;//do the initialization in the game controller
+        //sendUpdate({stepUpdate: 0}, "startGame");
+        theGame.runStep();
+      }
+   }
+  
+  return {awake: awake};
+  
+  
+}
+
+
+
+function makeStartGameButton(player){
+  var canvasEl = document.createElement('canvas');
+  canvasEl.width = 250;
+  canvasEl.height = 75;
+  var canvasCtx = canvasEl.getContext('2d');
+  //document.body.appendChild(canvasEl);
+  this.fontSize = 30;
+  this.fontPadding = 10;
+  canvasCtx.font = this.fontSize+"px Arial";
+  canvasCtx.fillStyle = "rgba(255,255,255, 1)";
+  this.element = canvasEl; 
+  this.textArea = canvasCtx;
+  var textureElement = new THREE.Texture(this.element);
+  this.material = new THREE.MeshBasicMaterial({map: textureElement}); 
+  this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(canvasEl.width/4, canvasEl.height/4), this.material);
+  this.textArea.textAlign = "center";
+  this.textArea.fillText("Start the game", this.element.width/2, this.element.height/2 + this.fontSize/4);
+  
+  this.mesh.addBehaviors(startGame(player));
+  this.mesh.updateBehaviors(0);
+  
+  sim.scene.add(this.mesh);
+}
+
+
+
+function makeJoinButton(index){
+   var canvasEl = document.createElement('canvas');
+  canvasEl.width = 250;
+  canvasEl.height = 75;
+  var canvasCtx = canvasEl.getContext('2d');
+  //document.body.appendChild(canvasEl);
+  this.fontSize = 40;
+  this.fontPadding = 10;
+  canvasCtx.font = this.fontSize+"px Arial";
+  canvasCtx.fillStyle = "rgba(255,255,255, 1)";
+  this.element = canvasEl;
+  this.textArea = canvasCtx;
+  var textureElement = new THREE.Texture(this.element);
+  this.material = new THREE.MeshBasicMaterial({map: textureElement});
+  this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(canvasEl.width/2, canvasEl.height/2), this.material);
+  this.textArea.textAlign = "center";
+  this.textArea.fillText("Deal me in", this.element.width/2, this.element.height/2 + this.fontSize/4);
+  movePlayerButton(this.mesh, index);
+  this.mesh.addBehaviors(addPlayer(index));
+  this.mesh.updateBehaviors(0);
+  // sim.scene.add(this.mesh);
+}
 
 
 

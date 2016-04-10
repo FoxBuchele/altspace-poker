@@ -50,7 +50,7 @@ player.prototype.renderVisuals = function(timeSince){
 
         this.hand.add(this.bettingui.mesh);
             
-        this.renderChips();  
+        //this.renderChips();  
         
         arrangeHand(this.hand, this.spot);
         sim.scene.add(this.hand);
@@ -66,7 +66,9 @@ player.prototype.renderVisuals = function(timeSince){
         //make buttons and UI
          
         this.joinButton.mesh.visible = false;
-        
+        this.renderChips();
+            
+            
         var numPlayers = 0;
         for(var i=0; i<theGame.players.length; i++){
           if(theGame.players[i].state != -1){
@@ -75,7 +77,7 @@ player.prototype.renderVisuals = function(timeSince){
         }
         
         if(numPlayers === 1){ //first player 
-          this.startGame = new makeStartGameButton();
+          this.startGame = new makeStartGameButton(this);
           this.hand.add(this.startGame.mesh);
           this.startGame.mesh.position.z = 10;
           this.startGame.mesh.position.y -= 125;
@@ -93,12 +95,13 @@ player.prototype.renderVisuals = function(timeSince){
         if(this.startGame){
           this.startGame.mesh.visible = false;
         }
+        var offset = 0;
         for(var i=0; i<this.cards.length; i++){
             
           //if this is the correct player, get correct card
           this.cards[i] = theGame.deck.getCard(this.cards[i], false, globalUserId === this.userId);
           //otherwise, get a black card
-            
+          this.cards[i].geom.position.y += offset;
           giveCard(this.cards, this.hand, i);
           window.setTimeout((function(that, index){
             return function(){ 
@@ -109,7 +112,7 @@ player.prototype.renderVisuals = function(timeSince){
               }
             }
           })(this, i), 4000);
-            
+          offset+=0.1;
         }
 
         break;
@@ -123,8 +126,8 @@ player.prototype.renderVisuals = function(timeSince){
         //this players turn to bet
         //put the bet cube over this player
         toggleVisible(this.bettingui.mesh, true);
-
-        theGame.betCube.visible = true;
+        toggleVisible(theGame.betCube, true);
+        //theGame.betCube.visible = true;
         theGame.betCube.position.copy(this.hand.position);
         break;
       case 4:
@@ -159,7 +162,7 @@ player.prototype.chipColors = {
 }
 
 player.prototype.win = function(amount, hand){
-  theGame.winCube.visible = true;
+  toggleVisible(theGame.winCube, true);
   theGame.winCube.position.copy(this.hand.position);
   theGame.bettingPot -= amount;
   this.money+= amount;

@@ -399,7 +399,7 @@ function giveCard(cards, toObj, i){
             thisCard.movementTween.rotation.copy(thisCard.geom.rotation); 
             thisCard.movementTween.position.copy(thisCard.geom.position);
   
-            var toRotationTween = new TWEEN.Tween(thisCard.movementTween.rotation).to({z: toObj.rotation.y}, 1000);
+            var toRotationTween = new TWEEN.Tween(thisCard.movementTween.rotation).to({z: -toObj.rotation.y}, 1000);
             toRotationTween.onUpdate((function(card){
               return function(value1){ 
                 //rotate the cards to face the players 
@@ -433,7 +433,7 @@ function giveCard(cards, toObj, i){
             }(thisCard, toObj)));
             
   
-            var toHandTween = new TWEEN.Tween(thisCard.movementTween.position ).to(getCardPosition(cards.length, i), 1000);
+            var toHandTween = new TWEEN.Tween(thisCard.movementTween.position).to(getCardPosition(cards.length, i), 1000);
             toHandTween.onUpdate((function(card){
               return function(value1){
                 //now that cards are parented properly, move them so we can view each card
@@ -450,8 +450,8 @@ function giveCard(cards, toObj, i){
 
 function toggleCard(thisCard, toggle){
     
-    var height = {y:-100};
-    var rotation = {x:0};
+    var height = {y:-110};
+    var rotation = {x:-Math.PI/8};
     if(!toggle){
       rotation.x = Math.PI/2;
       height.y = tableOffset.y; 
@@ -507,6 +507,8 @@ function main(){
         rot: new THREE.Vector3()
     });*/
     
+    
+    
     //var thisCard = theGame.deck.getCard({number:3, suit:"hearts"}, false, true); 
     //thisCard.geom.position.y += 100;
     
@@ -521,7 +523,7 @@ function main(){
     document.querySelector("svg .credits").style.display = "none";
     document.querySelector("svg .playerCount").style.display = "block";  
   
-   
+   /*
     var betimage = document.createElement('img');
     betimage.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/rotatingCubeBetting.png?color=white"; 
 	var betmaterial = new THREE.MeshBasicMaterial({map:new THREE.Texture(betimage)});
@@ -531,14 +533,33 @@ function main(){
     var winimage = document.createElement('img');
     winimage.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/rotatingCubeWinner.png"; 
     var winmaterial = new THREE.MeshBasicMaterial({map: new THREE.Texture(winimage)});
+    */
+    theGame.winCube = new THREE.Object3D();
+    theGame.betCube = new THREE.Object3D();
+    var winCube = theGame.models.WinnerText.clone();// new THREE.Mesh(betgeometry, winmaterial);
+    var betCube = theGame.models.BettingText.clone();//betCube;
+    var winArrow = theGame.models.IndicationArrow.clone();
+    var betArrow = theGame.models.IndicationArrow.clone();
+    winArrow.scale.set(50, 100, 50);
+    betArrow.scale.set(50, 100, 50);
+    betCube.scale.set(100, 100, 100);
+    winCube.scale.set(100, 100, 100);
     
-  
-    theGame.winCube = new THREE.Mesh(betgeometry, winmaterial);
-    theGame.betCube = betCube;
+    betArrow.position.y -= 20;
+    winArrow.position.y -= 20;
+    
+    theGame.winCube.add(winCube);
+    theGame.winCube.add(winArrow);
+    
+    theGame.betCube.add(betCube);
+    theGame.betCube.add(betArrow);
+    
     theGame.winCube.addBehaviors(alt.Spin({speed: 0.0000001}));
     theGame.betCube.addBehaviors(alt.Spin({speed: 0.0000001}));
-    theGame.betCube.visible = false;
-    theGame.winCube.visible = false;  
+    //theGame.betCube.visible = false;
+    //theGame.winCube.visible = false;
+    toggleVisible(theGame.betCube, false);
+    toggleVisible(theGame.winCube, false);
     theGame.cardsToDeck = cardsToDeck;
     var potHolder = createPotHolder();
     potHolder.position.copy(potPosition);
@@ -552,7 +573,7 @@ function main(){
     sim.scene.add(theGame.potHolder);
     sim.scene.add(potHolder); 
     sim.scene.add(theGame.winCube); 
-    sim.scene.add(betCube);
+    sim.scene.add(theGame.betCube);
   
     sim.renderer.render(sim.scene, sim.camera); 
   
@@ -655,143 +676,3 @@ function movePlayerButton(mesh, newPlayerIndex){
     
     
 }
-
-function addPlayer(ind){
-  var index = ind;
-  var object; 
-  var textObj;
-  
-  
-  function awake(obj){
-    object = obj;
-    object.addEventListener('cursordown', (function(i){
-      return function(){
-	  
-		
-		if(typeof globalUserId != 'undefined'){
-			theGame.players[i].state = 0;
-			theGame.players[i].userId = globalUserId;
-            globalPlayerIndex = i;
-			sendUpdate({registerIndex: i, userId: globalUserId}, "registerPlayer");
-		}else{
-		
-			altspace.getUser().then(function(result){
-		        globalUserId = result.userId;
-				theGame.players[i].state = 0;
-				theGame.players[i].userId = globalUserId;
-                globalPlayerIndex = i;
-				sendUpdate({registerIndex: i, userId: globalUserId}, "registerPlayer");
-			});
-		}
-	  }
-    }(index)));
-    textObj = document.querySelector(".playerCount");
-    
-  }
-  
-  return {awake: awake}; 
-  
-  
-}
-
-function startGame(){
-  
-  var object;
-  
-  function awake(obj){
-    object = obj;
-    object.addEventListener('cursordown', startGame);
-    
-  }
-  
-  function startGame(){
-        theGame.step = 0;//do the initialization in the game controller
-        //sendUpdate({stepUpdate: 0}, "startGame");
-        theGame.runStep(); 
-   }
-  
-  return {awake: awake};
-  
-  
-}
-
-
-
-function makeStartGameButton(){
-  var canvasEl = document.createElement('canvas');
-  canvasEl.width = 250;
-  canvasEl.height = 75;
-  var canvasCtx = canvasEl.getContext('2d');
-  //document.body.appendChild(canvasEl);
-  this.fontSize = 30;
-  this.fontPadding = 10;
-  canvasCtx.font = this.fontSize+"px Arial";
-  canvasCtx.fillStyle = "rgba(255,255,255, 1)";
-  this.element = canvasEl; 
-  this.textArea = canvasCtx;
-  var textureElement = new THREE.Texture(this.element);
-  this.material = new THREE.MeshBasicMaterial({map: textureElement}); 
-  this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(canvasEl.width/4, canvasEl.height/4), this.material);
-  this.textArea.textAlign = "center";
-  this.textArea.fillText("Start the game", this.element.width/2, this.element.height/2 + this.fontSize/4);
-  
-  this.mesh.addBehaviors(startGame());
-  this.mesh.updateBehaviors(0);
-  
-  sim.scene.add(this.mesh);
-}
-
-
-
-function makeJoinButton(index){
-   var canvasEl = document.createElement('canvas');
-  canvasEl.width = 250;
-  canvasEl.height = 75;
-  var canvasCtx = canvasEl.getContext('2d');
-  //document.body.appendChild(canvasEl);
-  this.fontSize = 40;
-  this.fontPadding = 10;
-  canvasCtx.font = this.fontSize+"px Arial";
-  canvasCtx.fillStyle = "rgba(255,255,255, 1)";
-  this.element = canvasEl;
-  this.textArea = canvasCtx;
-  var textureElement = new THREE.Texture(this.element);
-  this.material = new THREE.MeshBasicMaterial({map: textureElement});
-  this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(canvasEl.width/2, canvasEl.height/2), this.material);
-  this.textArea.textAlign = "center";
-  this.textArea.fillText("Deal me in", this.element.width/2, this.element.height/2 + this.fontSize/4);
-  movePlayerButton(this.mesh, index);
-  this.mesh.addBehaviors(addPlayer(index));
-  this.mesh.updateBehaviors(0);
-  // sim.scene.add(this.mesh);
-}
-
-
-
-
-
-
-//main();
-
-
-
-/*
-  this.fold = function fold(){
-    this.player.fold();
-    this.currentBet = 0;
-    this.updateBet(this.currentBet);
-    for(var i=0; i<this.player.cards.length; i++){
-      THREE.SceneUtils.detach(this.player.cards[i].geom, this.player.hand, sim.scene);
-      cardToDeck(this.player.cards[i]);
-    }
-    this.player.cards = [];
-  }
-
-*/
-
-
-
-
-
-//main();
-
