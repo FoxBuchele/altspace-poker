@@ -83,11 +83,12 @@ function processUpdates(newUpdates){
     })
     
     console.log("apply these updates", newUpdates);
-
+    var indexOfError = 0;
     try{
         
     var lastMessage;
     for(var x=0; x<newUpdates.length; x++){
+        indexOfError = x;
         updateType = newUpdates[x].title;
         data = newUpdates[x].data;
         console.log("processing update", newUpdates[x]);
@@ -140,13 +141,24 @@ function processUpdates(newUpdates){
             case "startHand":
                 theGame.currentAuthority = data.authority;
                 theGame.resetDealers();
-                theGame.start();
+                theGame.step = 1;
+                  theGame.dealer = 0;
+                  theGame.better = 0;
+                  for(var i=0; i<theGame.players.length; i++){
+                    if(theGame.players[i].state === 0){    //they're  waiting
+                      theGame.players[i].state = 2;
+                    }
+                  }
+                theGame.runClientStep();
+                
                 break;
             case "changeGameStep":
                 console.log(data);
                 theGame.resetBetters();
                 theGame.step = data.toStep;
-                theGame.runStep();
+                theGame.runClientStep();
+                
+                
                 break;
            /* case "waitingFor":
                 //data.toPlayer
@@ -203,8 +215,8 @@ function processUpdates(newUpdates){
                 Array.prototype.push.apply(theGame.sharedCards.cards, data.sharedCards);
                 console.log(theGame.sharedCards);
                 theGame.resetBetters();
-                //theGame.step = data.stepToRerun;
-                //theGame.runStep();
+                theGame.step = data.stepToRerun;
+                theGame.runClientStep();
                 break;
             default:
                 console.log("No action specified for update", updateType, data);
@@ -220,6 +232,7 @@ function processUpdates(newUpdates){
         
     }
     catch(e){
+        console.log('error while processing message', newUpdates[indexOfError]);
         console.log(e, e.message);
     }
     

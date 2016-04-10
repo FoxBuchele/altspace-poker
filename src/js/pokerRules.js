@@ -505,6 +505,13 @@ game.prototype.rotateDealers = function(){
   this.resetBetters();
 }
 
+game.prototype.runClientStep = function(){
+    this.resetBetters();
+    if(typeof this.logic.steps[this.step].execClient !== "undefined"){
+        this.logic.steps[this.step].execClient(this);
+    }
+}
+
 game.prototype.runStep = function(){
   this.resetBetters();
   this.logic.steps[this.step].exec(this);
@@ -585,11 +592,7 @@ var texasHoldEm = {
                 game.startGameButton.visible = false;
             },
 			exec: function(game){
-						//deal 2 to players
-            
-            
-            if(game.currentAuthority === globalUserId){
-                
+						//deal 2 to players                
                 //game.rotateDealers();
                 for(var i=0; i<game.players.length; i++){
                   if(game.players[i].state > -1 && game.players[i].cards.length === 0){
@@ -613,7 +616,7 @@ var texasHoldEm = {
             
             }
                 
-			}
+			
             
 		},
 		{ //2
@@ -657,6 +660,7 @@ var texasHoldEm = {
                     sendUpdate({toStep: 4}, "changeGameStep");
 
                 }, 2000);
+            }
                 
 		},
 		{ //4

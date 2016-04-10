@@ -305,8 +305,9 @@ player.prototype.fold = function(){
   this.state = 4;
   if(theGame.bettingOrder.length === 1){ 
       //take to judging
-      theGame.step = theGame.logic.steps.length - 2;
-      theGame.runStep();
+      //theGame.step = theGame.logic.steps.length - 2;
+      //theGame.runStep();
+      console.log("TODO: Take player straight to judging")
   }else{
     theGame.startBetting(); 
   }
