@@ -92,6 +92,18 @@ deck.prototype.shuffle = function(){
 	}
 }
 
+deck.prototype.arrange = function(arrangement){
+    
+    for(var i=0; i<arrangement.length; i++){
+        for(var j=0; j<this.perfectDeck.length; j++){
+            if(this.perfectDeck[j].number === arrangement[i].number && this.perfectDeck[j].suit === arrangement[i].suit){
+              this.shuffledDeck[i] = this.perfectDeck[j];
+              break;
+            }
+        }
+    }
+}
+
 deck.prototype.dealTo = function(players, numCards){
 	if(typeof(players.length) == "undefined"){
 		players = [players];
@@ -174,32 +186,10 @@ deck.prototype.getCard = function(theCard, large, visible){
 
 function createHiddenCardGeom(){
 
-	var geometry = new THREE.PlaneGeometry(cardTemplate.width, cardTemplate.height);
-	var material = new THREE.MeshBasicMaterial({color:'#000000'});
-    var materialBack = new THREE.MeshBasicMaterial({color:'#583f2c'});
-  
-	var cardFront = new THREE.Mesh(geometry, material);
-  
-  var cardBack = new THREE.Mesh(geometry, materialBack);
-
-  cardBack.rotation.y = Math.PI;
-  
-  var card = new THREE.Object3D();
-  card.add(cardFront);
-  card.add(cardBack);
-  
-  card.position.copy(tableOffset);
-  card.position.y += cardTemplate.height/2;
-  
-  card.addBehaviors(
-			alt.Object3DSync({position: true, rotation: true})
-		);
-  sim.scene.add(card);  
-  card.userData.hidden = true;
-  return card; 
+	return createCardGeom({}, false, false);
 }
 
-function createCardGeom(theCard, doubleSided){
+function createCardGeom(theCard, doubleSided, visible){
    doubleSided = doubleSided || false;
    if(typeof theCard.geom !== "undefined"){
      console.error("We already made the geometry for this card!", theCard);
@@ -215,7 +205,13 @@ function createCardGeom(theCard, doubleSided){
     var cardfront = theGame.models.CardFront.clone();
     //uv for the card front is flipped, so we have to do this for some reason
     cardfront.scale.set(-300, 300, 300);
-	var material = new THREE.MeshBasicMaterial({color:'#FFFFFF', map: new THREE.Texture(theCard.image)});
+    var material;
+    if(visible){
+        material = new THREE.MeshBasicMaterial({color:'#000000'});
+    }else{
+        material = new THREE.MeshBasicMaterial({color:'#FFFFFF', map: new THREE.Texture(theCard.image)});
+    }
+	//var material = new THREE.MeshBasicMaterial({color:'#FFFFFF', map: new THREE.Texture(theCard.image)});
     for(var j=0; j<cardfront.children.length; j++){
         var mesh = cardfront.children[j];
         mesh.material = material;            
@@ -578,7 +574,7 @@ var texasHoldEm = {
         game.deck.shuffle();
         //game.rotateDealers();
         game.currentAuthority = globalUserId;
-        sendUpdate({authority:globalUserId}, "startHand");
+        sendUpdate({authority:globalUserId, deck: getSafeCards({cards: game.deck.shuffledDeck})}, "startHand");
 
         game.start();
           
@@ -598,8 +594,7 @@ var texasHoldEm = {
                   if(game.players[i].state > -1 && game.players[i].cards.length === 0){
                     game.deck.dealTo(game.players[i], 2);
                     game.players[i].state = 1;    //player animates their own cards 
-                    sendUpdate({index: i, player: getSafePlayer(game.players[i]), deck: getSafeCards({cards: game.deck})}, "dealingCards");
-                    //TODO: Just send the cards and to which player
+                    sendUpdate({index: i, player: getSafePlayer(game.players[i])}, "dealingCards");
                   }
                 }
 
@@ -609,7 +604,7 @@ var texasHoldEm = {
                     game.step = 2;
                     //sendUpdate({}, "start betting round 1");
                     //sendUpdate({toStep: 2});
-                    game.runStep();
+                    game.runClientStep();
                     sendUpdate({toStep: 2}, "changeGameStep");
                   }
                 }, 5000);
@@ -620,7 +615,7 @@ var texasHoldEm = {
             
 		},
 		{ //2
-			exec: betStep
+			execClient: betStep
 		},
 		{ //3
             execClient: function(game){
@@ -656,7 +651,7 @@ var texasHoldEm = {
                 //will technically run after the below section
                 window.setTimeout(function(){
                     game.step = 4;
-                    game.runStep();
+                    game.runClientStep();
                     sendUpdate({toStep: 4}, "changeGameStep");
 
                 }, 2000);
@@ -664,7 +659,7 @@ var texasHoldEm = {
                 
 		},
 		{ //4
-			exec: betStep
+			execClient: betStep
 		},
 		{ //5
             execClient: function(game){
@@ -689,7 +684,7 @@ var texasHoldEm = {
                     
                     window.setTimeout(function(){
                         game.step = 6;
-                        game.runStep();
+                        game.runClientStep();
                         sendUpdate({toStep: 6}, "changeGameStep");
                       
                     }, 2000); 
@@ -698,7 +693,7 @@ var texasHoldEm = {
 			}
 		},
 		{ //6
-			exec: betStep
+			execClient: betStep
 		},
 		{ //7
             execClient: function(game){
@@ -726,7 +721,7 @@ var texasHoldEm = {
                     
                     window.setTimeout(function(){
                         game.step = 8;
-                        game.runStep();
+                        game.runClientStep();
                         sendUpdate({toStep: 8}, "changeGameStep");
                       
                     }, 2000); 

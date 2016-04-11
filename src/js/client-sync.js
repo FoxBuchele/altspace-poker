@@ -142,8 +142,9 @@ function processUpdates(newUpdates){
                 theGame.currentAuthority = data.authority;
                 theGame.resetDealers();
                 theGame.step = 1;
-                  theGame.dealer = 0;
-                  theGame.better = 0;
+                theGame.dealer = 0;
+                theGame.better = 0;
+                theGame.deck.arrange(data.deck);
                   for(var i=0; i<theGame.players.length; i++){
                     if(theGame.players[i].state === 0){    //they're  waiting
                       theGame.players[i].state = 2;
