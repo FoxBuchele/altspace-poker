@@ -490,7 +490,7 @@ function updatePlayers(time){
     theGame.players[i].renderVisuals(time);
   }
   if(theGame.betCube){
-    theGame.betCube.updateBehaviors(time);
+    //theGame.betCube.updateBehaviors(time);
   }    
 
   TWEEN.update();

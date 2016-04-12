@@ -76,7 +76,7 @@ function processUpdates(newUpdates){
     
     var updateType, data;
         
-    
+    var authority;
     
     newUpdates.sort(function(x, y){
         return parseInt(x.timestamp) - parseInt(y.timestamp);
@@ -129,6 +129,8 @@ function processUpdates(newUpdates){
                 
                     for(var i=0; i<data.player.cards.length; i++){
                         theGame.players[data.index].cards[i] = theGame.deck.getCard(data.player.cards[i], false, theGame.players[data.index].userId === globalUserId);
+                        //remove a card from the deck, so if the host refreshes their deck is still at the same state
+                        theGame.deck.shuffledDeck.pop();
                     }
                     theGame.players[data.index].state = data.player.state;
                     theGame.players[data.index].renderVisuals(0);
@@ -139,7 +141,8 @@ function processUpdates(newUpdates){
                 
                 break;
             case "startHand":
-                theGame.currentAuthority = data.authority;
+                //theGame.currentAuthority = data.authority;
+                authority = data.authority;
                 theGame.resetDealers();
                 theGame.step = 1;
                 theGame.dealer = 0;
@@ -155,7 +158,6 @@ function processUpdates(newUpdates){
                 break;
             case "changeGameStep":
                 console.log(data);
-                theGame.resetBetters();
                 theGame.step = data.toStep;
                 theGame.runClientStep();
                 
@@ -214,10 +216,11 @@ function processUpdates(newUpdates){
                 break;
             case "dealSharedCards":
                 Array.prototype.push.apply(theGame.sharedCards.cards, data.sharedCards);
-                console.log(theGame.sharedCards);
-                theGame.resetBetters();
-                theGame.step = data.stepToRerun;
-                theGame.runClientStep();
+                for(var i=0; i<data.sharedCards.length; i++){
+                    theGame.deck.shuffledDeck.pop();
+                }
+                //theGame.step = data.stepToRerun;
+               // theGame.runClientStep();
                 break;
             default:
                 console.log("No action specified for update", updateType, data);
@@ -236,7 +239,10 @@ function processUpdates(newUpdates){
         console.log('error while processing message', newUpdates[indexOfError]);
         console.log(e, e.message);
     }
-    
+    if(typeof authority !== 'undefined'){
+        //prevents the host from taking any actions until they've applied all the updates
+        theGame.currentAuthority = authority;
+    }
     Array.prototype.push.apply(theGame.roundRecord, newUpdates);
     console.log("updates are now", theGame.roundRecord, newUpdates);
 }
@@ -251,20 +257,6 @@ var prevUpdate;
 function onUpdateRecieved(newVal){
     var response = newVal.val(); 
     console.log(response);
-    
-    
-   //if(prevUpdate === response.title){
-     //discard this response, we've already seen it
-    // return; 
-   //}
-      //var newGame = response.data;
-      //var oldState = theGame.step;
-      //var gameUpdate = false;  
-      //var playerUpdate = false;
-    
-    
-   // try { altspace.getUser().then(function(result) { console.log(result); }); } catch(e) { console.log(e); }
-    
     
     
       altspace.getUser().then(function(result){
@@ -285,110 +277,10 @@ function onUpdateRecieved(newVal){
         });
           
           processUpdates(newUpdates);
-        //processUpdates(response.data.slice(theGame.roundRecord.length, response.data.length));
-       // }else{
-       //     console.log("got repeat update", response.data, theGame.roundRecord);
-       // }
+
         console.groupEnd();
       });
                               
-      //if either a game update, a player update, or an 'important' flag is passed
-      //we'll update everything 
-     /* if(newGame.step > theGame.step){ 
-        console.log('updating from', newGame.step, theGame.step);
-        gameUpdate = true; 
-      } 
-      */
-    
-      //have to update the players first, so that the game doesn't 'double deal' 
-       /* if(newGame.players && newGame.players.length){ 
-          for(var i=0; i<newGame.players.length; i++){
-          if(newGame.players[i].state > theGame.players[i].state){
-            var oldState = theGame.players[i].state;
-            
-            console.log('recieved player update', newGame.players[i]);
-            mergeDeep(theGame.players[i], newGame.players[i]);
-            console.log('player is now', theGame.players[i]);
-            theGame.players[i].state = oldState;
-            while(newGame.players[i].state > theGame.players[i].state){    //if they come part way through, they need to catch up (and go through the init steps);
-              oldState++;  
-              console.log(oldState);
-              theGame.players[i].state = oldState;
-              if(oldState !== 3){
-                theGame.players[i].renderVisuals(5000); 
-              }
-            }
-            //theGame.players[i].renderVisuals(1); 
-          }else if(newGame.players[i].importantUpdate === true){
-            mergeDeep(theGame.players[i], newGame.players[i]);
-            //theGame.players[i].renderVisuals(5000); 
-          } 
-          
-          if(theGame.players[i].cards.length >0){ 
-          console.groupCollapsed("Analyzing cards...");
-          
-          //make sure the cards all are associated with the right model
-          for(var j=0; j<theGame.players[i].cards.length; j++){ 
-            var thiscard = theGame.players[i].cards[j];
-            
-             theGame.players[i].cards[j] = theGame.deck.getCard(thiscard);
-              console.log(theGame.players[i].cards[j]);
-             console.log('ok!');
-             
-           }
-          
-           console.groupEnd(); 
-         } 
-       }
-          
-        
-      }
-      */ 
-      /*
-      if(typeof newGame.registerIndex !== 'undefined'){
-          console.log('Recieved player registration!');
-            console.log(newGame.playerUpdate);
-          //TODO: Make sure we don't overwrite an existing player
-          var i = newGame.registerIndex;
-          theGame.players[i].state = 0;
-          theGame.players[i].userId = newGame.playerUpdate.userId;
-          
-      }
-      //delete newGame.players;
-    
-        //todo: only take deck modifications from the person that started the game
-    
-      var shuffledDeck = newGame.shuffledDeck.cards.slice();
-      delete newGame.shuffledDeck;
-      mergeDeep(theGame, newGame);
-      theGame.deck.shuffledDeck = shuffledDeck;
-      makePot(); 
-      if(gameUpdate){  
-          console.log('Recieved game update!', oldState, theGame.step); 
-          
-         
-        //theGame.logic.steps[theGame.step].exec(theGame);
-            
-          
-          //lot of crappy code to put the shared cards back up 
-        
-          for(var i=0; i<theGame.sharedCards.cards.length; i++){
-               theGame.sharedCards.cards[i] = theGame.deck.getCard(theGame.sharedCards.cards[i], true);
-                 
-               var toPlayerTween = new TWEEN.Tween(theGame.sharedCards.cards[i].movementTween.position).to({x:(-100-(cardTemplate.width+5)*i), y: 0, z: (100+(cardTemplate.width+5)*i)}, 2000);
-               toPlayerTween.onUpdate((function(card){
-                    return function(value1){
-                        //move the cards to the player
-                      card.geom.position.copy(card.movementTween.position);
-                    }
-               }(theGame.sharedCards.cards[i])));
-               toPlayerTween.start();
-               
-            } 
-        theGame.runStep();
-        
-      }
-      */
       
 }
 
@@ -471,12 +363,24 @@ function mergeDeep(target, source) {
 
 
 
-function sendUpdate(extraData, title){
+function sendUpdate(extraData, title, options){
   title = title || "";
+  options = options || {};
   console.groupCollapsed("Sending update '"+ title + "'");
-  theGame.roundRecord.push({title: title, timestamp: Date.now(), data: extraData})
- // prevUpdate = title; //this will prevent our client from processing this update
+  if(typeof options.overwriteAll !== "undefined" && options.overwriteAll === true){
+      //theGame.roundRecord = [theGame.roundRecord[0]];
+      theGame.roundRecord.push({title: title, timestamp: Date.now(), data: extraData})
+      theGame.syncInstance.update({title: title, data: theGame.roundRecord}); 
+
+  }
+  if(typeof options.thenUpdate === "undefined" || options.thenUpdate === false){
+    theGame.roundRecord.push({title: title, timestamp: Date.now(), data: extraData});
+    theGame.syncInstance.update({title: title, data: theGame.roundRecord}); 
+  }else{
+    theGame.syncInstance.update({title: title, data: theGame.roundRecord.concat([{title: title, timestamp: Date.now(), data: extraData}])}); 
+
+  }
+
   console.log(extraData);
-  theGame.syncInstance.update({title: title, data: theGame.roundRecord}); 
   console.groupEnd(); 
 }

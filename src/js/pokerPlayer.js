@@ -4,8 +4,9 @@ function player(whichPlayer){
   this.state = -1;
   this.prevState = -2;
   this.updateFunction = this.renderVisuals;
- 
-  
+  this.betThisRound = 0;  //how much player has put in the pot total this betting round
+  this.currentBet = 0;  //how much the player wants to put in the pot right now
+    
   //defined later
   this.userId = null;
   this.money = 0; 
@@ -114,6 +115,7 @@ player.prototype.renderVisuals = function(timeSince){
           })(this, i), 4000);
           offset+=0.1;
         }
+        this.state = 2;
 
         break;
       case 2: 
@@ -127,6 +129,12 @@ player.prototype.renderVisuals = function(timeSince){
         //put the bet cube over this player
         toggleVisible(this.bettingui.mesh, true);
         toggleVisible(theGame.betCube, true);
+            
+        //make sure we have enough money
+        this.currentBet = theGame.currentBet - this.betThisRound;
+        this.bettingui.updateBet(this.currentBet);
+            
+            
         //theGame.betCube.visible = true;
         theGame.betCube.position.copy(this.hand.position);
         break;
@@ -283,16 +291,23 @@ player.prototype.moveChipsTo = function(amount, where){
 player.prototype.bet = function(amount){
   this.money -= amount;
   theGame.bettingPot += amount;
-  theGame.currentBet = amount;
+  this.betThisRound += amount;
+  theGame.currentBet = this.betThisRound;
   //this.moveChipsTo(amount, theGame.potHolder);
-  makePot();
   this.renderChips();
-  //sendUpdate({i:theGame.players.indexOf(this), amount: amount}, "playerBet");
-  theGame.nextBet();
+
+    theGame.nextBet();
+}
+
+player.prototype.betUpdate = function(amount){
+    sendUpdate({i:theGame.players.indexOf(this), amount: amount}, "playerBet");
+    
+    
+    this.bet(amount);
 }
 
 player.prototype.fold = function(){ 
-  theGame.bettingOrder.splice(theGame.better, 1);
+  //theGame.bettingOrder.splice(theGame.better, 1);
   
   for(var i=0; i<this.cards.length; i++){ 
       console.log(this.cards[i]);
@@ -303,14 +318,14 @@ player.prototype.fold = function(){
   } 
   this.cards = [];
   this.state = 4;
-  if(theGame.bettingOrder.length === 1){ 
-      //take to judging
-      //theGame.step = theGame.logic.steps.length - 2;
-      //theGame.runStep();
-      console.log("TODO: Take player straight to judging")
-  }else{
-    theGame.startBetting(); 
-  }
-  //sendUpdate({i:theGame.players.indexOf(this)}, "playerFold");
+  theGame.nextBet();
   
+}
+
+player.prototype.foldUpdate = function(){
+    sendUpdate({i:theGame.players.indexOf(this)}, "playerFold");
+    
+    
+    
+    this.fold();
 }

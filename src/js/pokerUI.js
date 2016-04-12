@@ -367,7 +367,6 @@ function bettingUIInteractions(pl, updateBet, buttonArray){
       this.addArr = buttonArray[0];
       this.subArr = buttonArray[1];
       this.ctrlArray = buttonArray[2];
-      this.currentBet = 0;
       this.updateBet = updateBet;
 
       this.allowedTo = function allowedToDoThis(){
@@ -395,123 +394,118 @@ function bettingUIInteractions(pl, updateBet, buttonArray){
           console.log('did a test and it came back', allowed);
           return allowed;
       
-  }
+       }
     
-  this.awake = function awake(obj){
-    this.object = obj;
-    this.currentBet = 0;
-     this.addArr[0].addEventListener('cursordown', (function(that){
-       return function(t){
-         that.addMoney(1);
-       }
-     })(this));
-     this.addArr[1].addEventListener('cursordown', (function(that){
-       return function(t){
-         that.addMoney(5);
-       }
-     })(this));
-     this.addArr[2].addEventListener('cursordown', (function(that){
-       return function(t){
-         that.addMoney(10);
+      this.awake = function awake(obj){
+        this.object = obj;
+         this.addArr[0].addEventListener('cursordown', (function(that){
+           return function(t){
+             that.addMoney(1);
+           }
+         })(this));
+         this.addArr[1].addEventListener('cursordown', (function(that){
+           return function(t){
+             that.addMoney(5);
+           }
+         })(this));
+         this.addArr[2].addEventListener('cursordown', (function(that){
+           return function(t){
+             that.addMoney(10);
 
-       }
-     })(this));
-     this.addArr[3].addEventListener('cursordown', (function(that){
-       return function(t){
-         that.addMoney(25);
-       }
-     })(this));
-     this.addArr[4].addEventListener('cursordown', (function(that){
-       return function(t){
-         that.addMoney(100);
-       }
-     })(this));
-    
-    
-    
-    
-    this.subArr[0].addEventListener('cursordown', (function(that){
-       return function(t){
-         that.addMoney(-1); 
-       }
-     })(this));
-     this.subArr[1].addEventListener('cursordown', (function(that){
-       return function(t){
-         that.addMoney(-5);
-       }
-     })(this));
-     this.subArr[2].addEventListener('cursordown', (function(that){
-       return function(t){
-         that.addMoney(-10);
+           }
+         })(this));
+         this.addArr[3].addEventListener('cursordown', (function(that){
+           return function(t){
+             that.addMoney(25);
+           }
+         })(this));
+         this.addArr[4].addEventListener('cursordown', (function(that){
+           return function(t){
+             that.addMoney(100);
+           }
+         })(this));
 
-       }
-     })(this));
-     this.subArr[3].addEventListener('cursordown', (function(that){
-       return function(t){
-         that.addMoney(-25);
-       }
-     })(this));
-     this.subArr[4].addEventListener('cursordown', (function(that){
-       return function(t){
-         that.addMoney(-100);
-       }
-     })(this));
-    
-    
-    
-    
-    //fold, bet, all-in
-    
-     this.ctrlArray[0].addEventListener('cursordown', (function(that){
-       return function(t){
-         that.fold();
-       }
-     })(this));
-     this.ctrlArray[1].addEventListener('cursordown', (function(that){
-       return function(t){
-         that.done();
-       }
-     })(this));
-     this.ctrlArray[2].addEventListener('cursordown', (function(that){
-       return function(t){
-         that.allIn();
-       }
-     })(this));
+
+
+
+        this.subArr[0].addEventListener('cursordown', (function(that){
+           return function(t){
+             that.addMoney(-1); 
+           }
+         })(this));
+         this.subArr[1].addEventListener('cursordown', (function(that){
+           return function(t){
+             that.addMoney(-5);
+           }
+         })(this));
+         this.subArr[2].addEventListener('cursordown', (function(that){
+           return function(t){
+             that.addMoney(-10);
+           }
+         })(this));
+         this.subArr[3].addEventListener('cursordown', (function(that){
+           return function(t){
+             that.addMoney(-25);
+           }
+         })(this));
+         this.subArr[4].addEventListener('cursordown', (function(that){
+           return function(t){
+             that.addMoney(-100);
+           }
+         })(this));
+
+
+
+
+        //fold, bet, all-in
+
+         this.ctrlArray[0].addEventListener('cursordown', (function(that){
+           return function(t){
+             that.fold();
+           }
+         })(this));
+         this.ctrlArray[1].addEventListener('cursordown', (function(that){
+           return function(t){
+             that.done();
+           }
+         })(this));
+         this.ctrlArray[2].addEventListener('cursordown', (function(that){
+           return function(t){
+             that.allIn();
+           }
+         })(this));
   }
   
   this.addMoney = function addMoney(amount){
     console.log('got a click event');
     if(!this.allowedTo()){return false};
-    if(this.currentBet + amount <= this.player.money && (this.currentBet + amount) >= 0){ //this should be the min bet actually
-      this.currentBet += amount;
-      this.updateBet(this.currentBet);
+    if(this.player.currentBet + amount <= this.player.money && (this.player.currentBet + amount) >= 0){ //this should be the min bet actually
+      if(this.player.currentBet+amount >= theGame.currentBet){
+        this.player.currentBet += amount;
+        this.updateBet(this.player.currentBet);
+      }
     }else{
-      console.log('dont have the funds', this.currentBet + amount , (this.currentBet + amount) >= 0);
+      console.log('dont have the funds', this.player.currentBet + amount , (this.player.currentBet + amount) >= 0);
     }
   }
   
   this.allIn = function allIn(){ 
     if(!this.allowedTo()){return false};
-    this.currentBet = this.player.money;
-    this.updateBet(this.currentBet);
+    this.player.currentBet = this.player.money;
+    this.updateBet(this.player.currentBet);
   }
   
   this.done = function done(){
     if(!this.allowedTo()){return false};
-    sendUpdate({i:theGame.players.indexOf(this.player), amount: this.currentBet}, "playerBet");
-    this.player.bet(this.currentBet);
-    this.currentBet = 0;
-    this.updateBet(this.currentBet);
+    this.player.betUpdate(this.player.currentBet);
+    this.updateBet(this.player.currentBet);
   }
   
   this.fold = function fold(){
     if(!this.allowedTo()){return false};
-    sendUpdate({i:theGame.players.indexOf(this.player)}, "playerFold");
-    this.player.fold();
-    this.currentBet = 0;
-    this.updateBet(this.currentBet);
+    this.player.foldUpdate();
+    this.updateBet(this.player.currentBet);
   } 
-
 }
 
 
