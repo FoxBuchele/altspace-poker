@@ -143,16 +143,16 @@ function processUpdates(newUpdates){
             case "startHand":
                 //theGame.currentAuthority = data.authority;
                 authority = data.authority;
-                theGame.resetDealers();
-                theGame.step = 1;
-                theGame.dealer = 0;
-                theGame.better = 0;
+                
                 theGame.deck.arrange(data.deck);
                   for(var i=0; i<theGame.players.length; i++){
                     if(theGame.players[i].state === 0){    //they're  waiting
                       theGame.players[i].state = 2;
                     }
                   }
+                theGame.resetDealers();
+                theGame.step = 1;
+                theGame.dealer = data.dealer;
                 theGame.runClientStep();
                 
                 break;
@@ -221,6 +221,25 @@ function processUpdates(newUpdates){
                 }
                 //theGame.step = data.stepToRerun;
                // theGame.runClientStep();
+                break;
+            case "transferControl":
+                
+                for(var i=0; i<theGame.players.length; i++){
+                        theGame.players[i].state = data.players[i].state;
+                        theGame.players[i].money = data.players[i].money;
+                }
+                
+                if(theGame.players[data.transferControl] === globalUserId){
+                    //we are now the dealer!
+                    //apply the money and spots from the previous dealer
+                    
+                    game.deck.shuffle();
+                    authority = globalUserId;
+                    sendUpdate({authority:globalUserId, deck: getSafeCards({cards: game.deck.shuffledDeck})}, "startHand");
+                    game.start();
+                }
+                
+                
                 break;
             default:
                 console.log("No action specified for update", updateType, data);

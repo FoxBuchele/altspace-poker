@@ -454,14 +454,7 @@ function game(){
 
 game.prototype.start = function(){
   this.step = 1;
-  this.dealer = 0;
   this.better = 0;
-  for(var i=0; i<this.players.length; i++){
-    if(this.players[i].state === 0){    //they're  waiting
-      this.players[i].state = 2;
-    }
-  }
-  console.log("starting game", this);
   this.runStep();
 }
 
@@ -473,8 +466,10 @@ game.prototype.resetBetters = function(){
       bettingOrder.push(i);
     }
   }
+  for(var i=0; i<this.dealer; i++){
+      bettingOrder.push(bettingOrder.shift());
+  }
   this.bettingOrder = bettingOrder;
-  this.better = 0;
 }
 
 game.prototype.playersThatNeedToBet = function(){
@@ -491,24 +486,36 @@ game.prototype.playersThatNeedToBet = function(){
 
 game.prototype.resetDealers = function(){
   console.log('reseting dealers'); 
-  this.dealer = 0;
-  this.dealingOrder = this.players.slice();
+   var order = this.players.slice();
+    this.dealingOrder = [];
+    
+    //get the dealing order
+    
+    for(var i=0; i<order.length; i++){
+        if(order[i].state > -1){
+            this.dealingOrder.push(order[i]);
+        }
+    }
 }
-/*
-game.prototype.rotateDealers = function(){
-  this.dealingOrder.unshift(this.dealingOrder.pop());
-  this.resetBetters();
-}*/
+
+game.prototype.rotateDealers = function(){ 
+    
+    this.resetDealers();
+    
+    //increment the dealer index
+    
+    this.dealer = (this.dealer+1)%this.dealingOrder.length;
+    
+    
+}
 
 game.prototype.runClientStep = function(){
-    //this.resetBetters();
     if(typeof this.logic.steps[this.step].execClient !== "undefined"){
         this.logic.steps[this.step].execClient(this);
     }
 }
 
 game.prototype.runStep = function(){
-  this.resetBetters();
   this.logic.steps[this.step].exec(this);
   //console.log('sending step', this.step);
   //theGame.syncInstance.update(getSafeGameObj());
@@ -578,21 +585,22 @@ game.prototype.startBetting = function(){
 var betStep = function(game){
         toggleVisible(game.betCube, true);// game.betCube.visible = true;
         game.currentBet = 0;
-        game.resetBetters(); 
-				if(game.dealingOrder[game.bettingOrder[game.better]].state !== 3){
-					game.dealingOrder[game.bettingOrder[game.better]].state = 3;
-				}
+        game.resetBetters();
+        game.better = 0;
+		game.dealingOrder[game.bettingOrder[game.better]].state = 3;
+
 }
 
 var texasHoldEm = {
 	steps: [
     {   //0
       exec: function(game){
-        game.resetDealers();
+        //this is run on the very first hand only
+        game.dealer = 0;
         game.deck.shuffle();
         //game.rotateDealers();
         game.currentAuthority = globalUserId;
-        sendUpdate({authority:globalUserId, deck: getSafeCards({cards: game.deck.shuffledDeck})}, "startHand", {overwriteAll: true});
+        sendUpdate({authority:globalUserId, dealer: game.dealer, deck: getSafeCards({cards: game.deck.shuffledDeck})}, "startHand");
 
         game.start();
           
@@ -784,58 +792,49 @@ var texasHoldEm = {
                     console.log(winningPlayer, "wins with", highestHand);
                     winningPlayer.win(game.bettingPot, highestHand);
                     sendUpdate({winningPlayer: getSafePlayer(winningPlayer), hand: highestHand}, "playerWin");
-                    sendUpdate({toStep: 9}, "changeGameStep");
+                    sendUpdate({toStep: 9}, "changeGameStep", {thenUpdate: true});
                     //game.runClientStep();
                     sendUpdate({toStep: 10}, "changeGameStep");
-                   // game.step = 10;
-                    /*
-                    window.setTimeout(function(){
-                      if(game.step === 10){
-                        game.runStep(); //kick out players without money
-                        game.runClientStep();
-                      }
-                    }, 3000);*/
+                    game.step = 10;
+                    game.runClientStep();
+                    game.runStep(); //kick out players without money, transfer control
+
                 
 			}
 		},
     { //10
         
         execClient: function(game){
-            
+            toggleVisible(game.winCube, false);
+            game.cardsToDeck();
         },
       exec: function(game){
-        toggleVisible(game.winCube, false);
-        game.cardsToDeck();
         
-        if(game.currentAuthority === globalUserId){    
-            for(var i=0; i<game.players.length; i++){
+        
+            for(var i=0; i<game.dealingOrder.length; i++){
               //go through every player, if they have no money, they need to leave
               //broke-ass punks
 
-              if(game.players[i].money === 0 && game.players[i].state !== -1){
-                game.players[i].state = -1;
-                  
-              }else if(game.players[i].state === 4){
-                game.players[i].state = 0;
+              if(game.dealingOrder[i].money === 0 && game.dealingOrder[i].state !== -1){
+                game.dealingOrder[i].state = -1;
+                if(i === game.dealer){
+                    game.dealer--;  //if this person folds out, pretend like the person right before them was the dealer when we rotate
+                }
               }
             }
             
-             //send player updates, switch dealers
-            window.setTimeout(function(){
-              //game.rotateDealers(); 
-              if(game.step !== 0){
-                game.step = 0;
-
-                  //switch dealers
-
-              //  sendUpdate({}, "Next hand");
-                game.runStep();
-              }
-            }, 2000);
-        }
+            game.step = 0;
+            
+            game.rotateDealers();
+            
+            var playerStates = [];
+            for(var i=0; i<game.players.length; i++){
+                game.players[i].cards = [];
+                playerStates.push(getSafePlayer(game.players[i]));
+            }
           
+            sendUpdate({transferControl: game.dealingOrder[game.dealer].spot, endstatePlayers: playerStates}, "transferControl", {thenUpdate: true});
           
-       
       }
     }
 	]
