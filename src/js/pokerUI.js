@@ -527,7 +527,7 @@ function addPlayer(ind){
 			theGame.players[i].state = 0;
 			theGame.players[i].userId = globalUserId;
             globalPlayerIndex = i;
-			sendUpdate({registerIndex: i, userId: globalUserId}, "registerPlayer");
+			sendUpdate({registerIndex: i, userId: globalUserId, money: theGame.players[i].money}, "registerPlayer");
 		}else{
 		
 			altspace.getUser().then(function(result){
@@ -535,12 +535,11 @@ function addPlayer(ind){
 				theGame.players[i].state = 0;
 				theGame.players[i].userId = globalUserId;
                 globalPlayerIndex = i;
-				sendUpdate({registerIndex: i, userId: globalUserId}, "registerPlayer");
+				sendUpdate({registerIndex: i, userId: globalUserId, money:theGame.players[i].money}, "registerPlayer");
 			});
 		}
 	  }
     }(index)));
-    textObj = document.querySelector(".playerCount");
     
   }
   

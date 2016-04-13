@@ -591,6 +591,10 @@ var betStep = function(game){
 
 }
 
+var getSharedCardPosition = function(i){
+    return {x:(80-(cardTemplate.width+15)*i), y: 0, z: (-80+(cardTemplate.width+15)*i)};
+}
+
 var texasHoldEm = {
 	steps: [
     {   //0
@@ -598,7 +602,7 @@ var texasHoldEm = {
         //this is run on the very first hand only
         game.dealer = 0;
         game.deck.shuffle();
-        //game.rotateDealers();
+        game.rotateDealers();
         game.currentAuthority = globalUserId;
         sendUpdate({authority:globalUserId, dealer: game.dealer, deck: getSafeCards({cards: game.deck.shuffledDeck})}, "startHand");
 
@@ -653,14 +657,14 @@ var texasHoldEm = {
 
                 for(var i=0; i<game.sharedCards.cards.length; i++){ 
                    game.sharedCards.cards[i] = game.deck.getCard(game.sharedCards.cards[i], true, true);
-                   var toPlayerTween = new TWEEN.Tween(game.sharedCards.cards[i].movementTween.position).to({x:(-100-(cardTemplate.width+5)*i), y: 0, z: (100+(cardTemplate.width+5)*i)}, 2000);
-                   toPlayerTween.onUpdate((function(card){
+                   var toSharedTween = new TWEEN.Tween(game.sharedCards.cards[i].movementTween.position).to(getSharedCardPosition(i), 2000); 
+                   toSharedTween.onUpdate((function(card){
                       return function(value1){
                           //move the cards to the player
                         card.geom.position.copy(card.movementTween.position);
                       }
                     }(game.sharedCards.cards[i])));
-                   toPlayerTween.start();
+                   toSharedTween.start();
                 }
                 game.step = 4;
                 game.runClientStep();
@@ -697,7 +701,7 @@ var texasHoldEm = {
                 toggleVisible(game.betCube, false);
                 game.sharedCards.cards[3] = game.deck.getCard(game.sharedCards.cards[3], true, true);
 
-                       var toPlayerTween = new TWEEN.Tween(game.sharedCards.cards[3].movementTween.position).to({x:(-100-(cardTemplate.width+5)*3), y: 0, z: (100+(cardTemplate.width+5)*3)}, 2000);
+                       var toPlayerTween = new TWEEN.Tween(game.sharedCards.cards[3].movementTween.position).to(getSharedCardPosition(3), 2000);
                        toPlayerTween.onUpdate((function(card){
                           return function(value1){
                               //move the cards to the player
@@ -736,7 +740,7 @@ var texasHoldEm = {
                 toggleVisible(game.betCube, false);
                  game.sharedCards.cards[4] = game.deck.getCard(game.sharedCards.cards[4], true, true);
 
-                       var toPlayerTween = new TWEEN.Tween(game.sharedCards.cards[4].movementTween.position).to({x:(-100-(cardTemplate.width+5)*4), y: 0, z: (100+(cardTemplate.width+5)*4)}, 2000);
+                       var toPlayerTween = new TWEEN.Tween(game.sharedCards.cards[4].movementTween.position).to(getSharedCardPosition(4), 2000);
                        toPlayerTween.onUpdate((function(card){
                           return function(value1){
                               //move the cards to the player

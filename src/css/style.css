@@ -1,7 +1,7 @@
 svg{
 
   position: fixed;
-  top: 250px;
+  top: 200px;
   left: 0;
   font: bold 50px 'Arial';
   width: 100%;
@@ -17,14 +17,11 @@ svg text{
   stroke-linejoin: round;
 }
 svg text.credits{
-  font: bold 24px 'Arial';
-  stroke-width: 1.5px;
+  font: bold 20px 'Arial';
+  stroke-width: 1px;
 }
 svg text.title{
   font: bold 42px 'Arial'
-}
-svg text.playerCount{
-  display: none;
 }
 svg text.gamePhase{
   display: none;

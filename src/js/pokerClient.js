@@ -31,7 +31,7 @@ var tableOffset = new THREE.Vector3(0, -150, 0)
 
 var potPosition = new THREE.Vector3();
 //potPosition.copy(tableOffset);
-potPosition.set(150, tableOffset.y, 150);
+potPosition.set(175, tableOffset.y-19, 0);
 
 var cardTemplate = {
   width: 25,
@@ -59,7 +59,23 @@ var globalPlayerIndex = -1;
  
 
 
+var tableTexImg = document.createElement('img');
+tableTexImg.src = "assets/Models/TableTexture.png";  
+var tableMat = new THREE.MeshBasicMaterial({map:new THREE.Texture(tableTexImg)});
 
+var bettingTexImg = document.createElement('img');
+bettingTexImg.src = "assets/Models/BettingTexture.png";
+var bettingMat = new THREE.MeshBasicMaterial({map: new THREE.Texture(bettingTexImg)});
+
+var cardTexImg = document.createElement('img');
+cardTexImg.src = "assets/Models/CardTexture.png";
+var cardBackMat = new THREE.MeshBasicMaterial({map: new THREE.Texture(cardTexImg)});
+
+var menuTexImg = document.createElement('img');
+menuTexImg.src = "assets/Models/MenuTexture.png";
+var menuMat = new THREE.MeshBasicMaterial({map: new THREE.Texture(menuTexImg)});
+
+var basicMat = new THREE.MeshBasicMaterial({color: "#FFFFFF"});
 
 
 
@@ -92,30 +108,14 @@ function ready(firstInstance) {
 
         theGame.deck.shuffle(); 
         
-        theGame.roundRecord = [{title: "startedLevel", timestamp: Date.now(), data: getSafeGameObj()}]
+        theGame.roundRecord = [{title: "startedLevel", timestamp: Date.now()}]
          
         instanceBase.child('game').set({title: "Initial data dump", data: theGame.roundRecord});
 
 
     }
   
-    var tableTexImg = document.createElement('img');
-    tableTexImg.src = "assets/Models/TableTexture.png";  
-    var tableMat = new THREE.MeshBasicMaterial({map:new THREE.Texture(tableTexImg)});
-        
-    var bettingTexImg = document.createElement('img');
-    bettingTexImg.src = "assets/Models/BettingTexture.png";
-    var bettingMat = new THREE.MeshBasicMaterial({map: new THREE.Texture(bettingTexImg)});
     
-    var cardTexImg = document.createElement('img');
-    cardTexImg.src = "assets/Models/CardTexture.png";
-    var cardBackMat = new THREE.MeshBasicMaterial({map: new THREE.Texture(cardTexImg)});
-        
-    var menuTexImg = document.createElement('img');
-    menuTexImg.src = "assets/Models/MenuTexture.png";
-    var menuMat = new THREE.MeshBasicMaterial({map: new THREE.Texture(menuTexImg)});
-        
-    var basicMat = new THREE.MeshBasicMaterial({color: "#FFFFFF"});
     
       theGame.syncInstance = instanceBase.child('game');       
     
@@ -187,8 +187,20 @@ function createTable(){
                  
      table.scale.set(300, 300, 300);
 
-
-
+     var deck = theGame.models.CardFront.clone();
+     
+        for(var i=0; i<deck.children.length; i++){
+                var group = deck.children[i];
+                group.material = cardBackMat;
+        }
+    
+     deck.scale.set(300, 300, 4000);
+     deck.rotation.set(-Math.PI/2, 0, 0);
+     deck.position.copy(tableOffset); 
+     deck.position.y -= 5;
+    
+    
+     sim.scene.add(deck);
      sim.scene.add(table);
      table.position.copy(tableOffset);
      table.position.y -= 380;
@@ -238,36 +250,36 @@ function arrangeHand(hand, spotIndex){
       case 0:
         //hand.position.x -= (fullOffset -     (cardTemplate.width+cardTemplate.padding) * i);
         hand.position.z = 225;
-        hand.userData.forward = new THREE.Vector3(0, 0, -1);
+        hand.userData.forward = new THREE.Vector3(0, 0, 0);
         break;
       case 1:
         hand.position.x = 195;
         hand.position.z = 112;
         hand.rotation.y = Math.PI/3;
-        hand.userData.forward = new THREE.Vector3(0, 0, -1);
+        hand.userData.forward = new THREE.Vector3(0, 0, 0);
         break;
       case 2:
         hand.position.x = 195;
         hand.position.z = -112;
         hand.rotation.y = 2*Math.PI/3;
-        hand.userData.forward = new THREE.Vector3(0, 0, -1);
+        hand.userData.forward = new THREE.Vector3(0, 0, 0);
         break;
       case 3:
         hand.position.z = -225;
         hand.rotation.y = -Math.PI;
-        hand.userData.forward = new THREE.Vector3(0, 0, 1);
+        hand.userData.forward = new THREE.Vector3(0, 0, 0);
         break;
       case 4:
         hand.position.x = -195;
         hand.position.z = -112;
         hand.rotation.y = -2*Math.PI/3;
-        hand.userData.forward = new THREE.Vector3(0, 0, -1);   
+        hand.userData.forward = new THREE.Vector3(0, 0, 0);   
            break;
        case 5:
         hand.position.x = -195;
         hand.position.z = 112;
         hand.rotation.y = -Math.PI/3;
-       hand.userData.forward = new THREE.Vector3(0, 0, -1);    
+       hand.userData.forward = new THREE.Vector3(0, 0, 0);    
            break;
    }
   
@@ -520,8 +532,11 @@ function main(){
     updatePlayers(0);
     
     document.querySelector("svg .loading").style.display = "none";
-    document.querySelector("svg .credits").style.display = "none";
-    document.querySelector("svg .playerCount").style.display = "block";  
+    //document.querySelectorAll("svg .credits").style.display = "none";
+    [].forEach.call(document.querySelectorAll("svg .credits"), function(text) {
+        document.querySelectorAll("svg .credits")
+        text.style.display = "none";
+    });
   
    /*
     var betimage = document.createElement('img');

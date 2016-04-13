@@ -101,7 +101,7 @@ function processUpdates(newUpdates){
                 theGame.players[data.registerIndex].userId = data.userId;
                 theGame.players[data.registerIndex].state = 0;
                 theGame.players[data.registerIndex].renderVisuals(0);
-                
+                theGame.players[data.registerIndex].money = data.money;
                
                 /*var forwardDirection = new THREE.Vector3(0, 0, 1);
                 var matrix = new THREE.Matrix4();
@@ -132,7 +132,7 @@ function processUpdates(newUpdates){
                         //remove a card from the deck, so if the host refreshes their deck is still at the same state
                         theGame.deck.shuffledDeck.pop();
                     }
-                    theGame.players[data.index].state = data.player.state;
+                    theGame.players[data.index].state = 1;
                     theGame.players[data.index].renderVisuals(0);
                     theGame.players[data.index].state = 2;
                     
@@ -151,9 +151,9 @@ function processUpdates(newUpdates){
                     }
                   }
                 theGame.resetDealers();
-                theGame.step = 1;
+                //theGame.step = 1;
                 theGame.dealer = data.dealer;
-                theGame.runClientStep();
+               // theGame.runClientStep();
                 
                 break;
             case "changeGameStep":
@@ -225,18 +225,46 @@ function processUpdates(newUpdates){
             case "transferControl":
                 
                 for(var i=0; i<theGame.players.length; i++){
-                        theGame.players[i].state = data.players[i].state;
-                        theGame.players[i].money = data.players[i].money;
+                        theGame.players[i].state = data.endstatePlayers[i].state;
+                        theGame.players[i].money = data.endstatePlayers[i].money;
                 }
                 
-                if(theGame.players[data.transferControl] === globalUserId){
+                if(theGame.players[data.transferControl].userId === globalUserId){
                     //we are now the dealer!
                     //apply the money and spots from the previous dealer
                     
-                    game.deck.shuffle();
+                    theGame.deck.shuffle();
                     authority = globalUserId;
-                    sendUpdate({authority:globalUserId, deck: getSafeCards({cards: game.deck.shuffledDeck})}, "startHand");
-                    game.start();
+                    
+                    //create a new round record, send it to everyone with the 
+                    
+                    //start level
+                    setTimeout(function(){
+                        theGame.roundRecord = [{title: "startedLevel", timestamp: Date.now()}];
+                        //lets finish reading all the updates first
+                        //register players
+
+                        for(var i=0; i<theGame.players.length; i++){
+
+                            if(theGame.players[i].state > -1){
+                                theGame.players[i].state = 0;
+                                theGame.roundRecord.push({data:{registerIndex: i, userId: globalUserId, money: theGame.players[i].money}, title: "registerPlayer"});
+                            }
+
+                        }
+
+                        sendUpdate({authority:globalUserId, deck: getSafeCards({cards: theGame.deck.shuffledDeck}), dealer: theGame.dealer},"startHand", {overwriteAll: true});
+
+                        //push all these updates
+                        //then deal the cards
+
+                        
+
+                        //sendUpdate({authority:globalUserId, deck: getSafeCards({cards: game.deck.shuffledDeck})}, "startHand");
+                        theGame.start();
+                    }, 10);
+                    
+                    
                 }
                 
                 
@@ -387,8 +415,6 @@ function sendUpdate(extraData, title, options){
   options = options || {};
   console.groupCollapsed("Sending update '"+ title + "'");
   if(typeof options.overwriteAll !== "undefined" && options.overwriteAll === true){
-      //theGame.roundRecord = [theGame.roundRecord[0]];
-      theGame.roundRecord.push({title: title, timestamp: Date.now(), data: extraData})
       theGame.syncInstance.update({title: title, data: theGame.roundRecord}); 
 
   }

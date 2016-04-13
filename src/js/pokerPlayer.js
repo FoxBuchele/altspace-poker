@@ -1,8 +1,8 @@
 function player(whichPlayer){
   this.cards = [];
   this.spot = whichPlayer;
-  this.state = -1;
-  this.prevState = -2;
+  this.state = -2;
+  this.prevState = -3;
   this.updateFunction = this.renderVisuals;
   this.betThisRound = 0;  //how much player has put in the pot total this betting round
   this.currentBet = 0;  //how much the player wants to put in the pot right now
@@ -29,13 +29,8 @@ player.prototype.renderVisuals = function(timeSince){
 
     //state init
     switch(this.state){
-      case -1:
-        //no one playing
-       
-        this.money = startingMoney;  
+      case -2:
         
-            
-            
         this.hand = new THREE.Object3D();
         
         var hideButton = this.createHideButton(); 
@@ -47,7 +42,6 @@ player.prototype.renderVisuals = function(timeSince){
         this.bettingui = new bettingUI(this);
         //this.bettingui.mesh.rotation.y = -Math.PI/8;  
         this.bettingui.mesh.rotation.x = -Math.PI/2 + Math.PI/4;
-        toggleVisible(this.bettingui.mesh, false); 
 
         this.hand.add(this.bettingui.mesh);
             
@@ -61,6 +55,18 @@ player.prototype.renderVisuals = function(timeSince){
         }else{
           this.joinButton.mesh.visible = true;
         }
+        this.state = -1;
+        this.renderVisuals(0);
+        break;
+      case -1:
+        //no one playing
+        if(this.money === 0){
+            this.money = startingMoney;  
+        }
+            
+        toggleVisible(this.bettingui.mesh, false);    
+        
+            
         break;
       case 0:
         //someone playing, they haven't started yet
@@ -295,7 +301,7 @@ player.prototype.bet = function(amount){
   theGame.currentBet = this.betThisRound;
   //this.moveChipsTo(amount, theGame.potHolder);
   this.renderChips();
-
+    makePot();
     theGame.nextBet();
 }
 
