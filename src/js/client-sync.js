@@ -37,6 +37,7 @@ function getSafePlayer(thePlayer, important){
     var player = Object.assign({}, thePlayer);
     player.joinButton = null;
     player.bettingui = null;
+    player.optionsui = null;
     player.chipStack = null;
     player.joinButton = null; 
     player.hand = null;
@@ -179,10 +180,12 @@ function processUpdates(newUpdates){
                 forwardDirection.multiplyScalar(-100);
                 pos.add(forwardDirection);
                 var message;
-                if(data.amount > 0){
-                    message = "Player bet $"+data.amount+"!";
-                }else{
+                if(data.amount === 0){
                     message = "Player checked!";
+                }else if(theGame.players[data.i].money === 0){
+                    message = "Player went all-in with $"+data.amount+"!";
+                }else{
+                    message = "Player bet $"+data.amount+"!";
                 }
                 lastMessage = {
                         timeToDisappear: 3000,
@@ -212,6 +215,47 @@ function processUpdates(newUpdates){
                         pos: pos,
                         rot: handObj.quaternion
                     };
+                
+                break;
+            case "playerWin":
+                
+                var thisPlayer = theGame.players[data.winningPlayer.spot];
+                thisPlayer.win(game.bettingPot, data.hand);
+
+                var handObj = thisPlayer.hand;
+                var pos = new THREE.Vector3();
+                pos.copy(handObj.position);
+                
+                var forwardDirection = new THREE.Vector3();
+                forwardDirection.copy(handObj.userData.forward);
+                forwardDirection.multiplyScalar(-100);
+                pos.add(forwardDirection);
+                pos.y += 25;
+                var message = "Player won with "+data.hand.name+"!";
+                lastMessage = {
+                        timeToDisappear: 5000,
+                        messageType: 2,
+                        message: message,
+                        pos: pos,
+                        rot: handObj.quaternion
+                    };
+                var cardMessage = "";
+                cardMessage += theGame.deck.getCard(thisPlayer.cards[0]).friendlyRepresentation();
+                cardMessage += ", ";
+                cardMessage += theGame.deck.getCard(thisPlayer.cards[1]).friendlyRepresentation();
+                var pos2 = new THREE.Vector3();
+                pos2.copy(pos);
+                pos2.y += 50;
+                var whichCardsMessage = new errorMessage({
+                    timeToDisappear: 5000,
+                    messageType: 3,
+                    message: cardMessage,
+                    pos: pos2,
+                    rot: handObj.quaternion
+                });
+                
+                //show this players cards above their head
+                
                 
                 break;
             case "dealSharedCards":
@@ -248,7 +292,7 @@ function processUpdates(newUpdates){
 
                             if(theGame.players[i].state > -1){
                                 theGame.players[i].state = 0;
-                                theGame.roundRecord.push({data:{registerIndex: i, userId: globalUserId, money: theGame.players[i].money}, title: "registerPlayer"});
+                                theGame.roundRecord.push({data:{registerIndex: i, userId: theGame.players[i].userId, money: theGame.players[i].money}, timestamp: Date.now(), title: "registerPlayer"});
                             }
 
                         }
@@ -257,9 +301,6 @@ function processUpdates(newUpdates){
 
                         //push all these updates
                         //then deal the cards
-
-                        
-
                         //sendUpdate({authority:globalUserId, deck: getSafeCards({cards: game.deck.shuffledDeck})}, "startHand");
                         theGame.start();
                     }, 10);
@@ -415,8 +456,8 @@ function sendUpdate(extraData, title, options){
   options = options || {};
   console.groupCollapsed("Sending update '"+ title + "'");
   if(typeof options.overwriteAll !== "undefined" && options.overwriteAll === true){
+      theGame.roundRecord.push({title: title, timestamp: Date.now(), data: extraData});
       theGame.syncInstance.update({title: title, data: theGame.roundRecord}); 
-
   }
   if(typeof options.thenUpdate === "undefined" || options.thenUpdate === false){
     theGame.roundRecord.push({title: title, timestamp: Date.now(), data: extraData});

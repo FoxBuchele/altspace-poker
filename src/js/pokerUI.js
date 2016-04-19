@@ -113,6 +113,11 @@ function createMessage(text, type, direction){
             fillColor = "rgba(0, 153, 0, 1)";
             textColor = "rgba(255, 255, 255, 1)";
             break;
+        case 3:
+            //winning hand cardInfo
+            fillColor = "rgba(255, 255, 255, 1)";
+            textColor = "rgba(0, 0, 0, 1)";
+            break;
         default:
             console.error("No message color specified for message type ", type);
             break;
@@ -195,13 +200,77 @@ function rgb2hex(rgb){
 }
 
 
+function optionsUI(player){
+    this.mesh = new THREE.Object3D();
+    var slideOut = theGame.models.MenuSidepanel.clone();
+    var slideOutContainer = new THREE.Object3D();
+    
+    slideOutContainer.position.z += 5;
+    slideOutContainer.rotation.x = -Math.PI/2;
+    slideOutContainer.rotation.x += Math.PI/5;
+   // slideOut.rotation.set(0, Math.PI/2, 0);
+    //slideOut.rotation.y += Math.PI/5;
+    slideOutContainer.rotation.z = -Math.PI/2;
+    slideOutContainer.position.y -= 120;
+    slideOutContainer.position.x += 80;
+
+    slideOut.scale.set(400, 200, 200);
+    slideOutContainer.add(slideOut);
+    
+    /*
+    
+      refresh page
+      lock users
+      adjust money (stretch)
+    
+    */
+    
+    var lockButton = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), lockMaterial);
+    lockButton.position.x += 85;
+    lockButton.position.y += 10;
+    lockButton.position.z += 5;
+    lockButton.rotation.z = Math.PI/2;
+    slideOutContainer.add(lockButton);
+    
+    
+   var refreshButton = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), refreshMaterial);
+    refreshButton.position.y -= 200;
+    refreshButton.position.z += 80;
+    refreshButton.rotation.x = -Math.PI/5;
+    this.mesh.add(refreshButton);
+    
+    refreshButton.addBehaviors({
+        awake: function(obj){
+                console.log('refresh button is active!', obj)
+                obj.addEventListener('cursordown', function(){
+                    console.log('reload the page!');
+                    location.reload();
+                });
+        }
+    })
+    refreshButton.updateBehaviors(0);
+    
+    this.mesh.add(slideOutContainer);
+
+    
+}
+
+var refreshImg = document.createElement('img');
+    refreshImg.src = "assets/refresh.png";
+    refreshImg.threeTex = new THREE.Texture(refreshImg);
+var refreshMaterial = new THREE.MeshBasicMaterial({map:refreshImg.threeTex});
+
+var lockImg = document.createElement('img');
+    lockImg.src = "assets/lock.png";
+    lockImg.threeTex = new THREE.Texture(lockImg);
+var lockMaterial = new THREE.MeshBasicMaterial({map:lockImg.threeTex});
 
 var plusImg = document.createElement('img');
-plusImg.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/plus.png";
+plusImg.src = "assets/plus.png";
 plusImg.threeTex = new THREE.Texture(plusImg);
 
 var minusImg = document.createElement('img');
-minusImg.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/minus.png";
+minusImg.src = "assets/minus.png";
 minusImg.threeTex = new THREE.Texture(minusImg);
 
 var addMaterial = new THREE.MeshBasicMaterial({map:plusImg.threeTex});
@@ -211,24 +280,24 @@ var betImg = {
   img: document.createElement('img'),
   outImg: document.createElement('img')
 };
-betImg.outImg.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/betUI-bet2.png";
-betImg.img.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/betUI-bet.png";
+betImg.outImg.src = "assets/betUI-bet2.png";
+betImg.img.src = "assets/betUI-bet.png";
 betImg.threeMat = new THREE.MeshBasicMaterial({map:new THREE.Texture(betImg.img)});
 
 var foldImg = {
   img: document.createElement('img'),
   outImg: document.createElement('img')
 };
-foldImg.outImg.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/betUI-fold2.png";
-foldImg.img.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/betUI-fold.png";
+foldImg.outImg.src = "assets/betUI-fold2.png";
+foldImg.img.src = "assets/betUI-fold.png";
 foldImg.threeMat = new THREE.MeshBasicMaterial({map:new THREE.Texture(foldImg.img)});
 
 var inImg = {
   img: document.createElement('img'),
   outImg: document.createElement('img')
 };
-inImg.outImg.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/betUI-all_In.png";
-inImg.img.src = "http://foxgamestudios.com/wp-content/uploads/2016/02/betUI-all_In.png";
+inImg.outImg.src = "assets/betUI-all_In.png";
+inImg.img.src = "assets/betUI-all_In.png";
 inImg.threeMat = new THREE.MeshBasicMaterial({map:new THREE.Texture(inImg.img)});
 
 

@@ -29,20 +29,28 @@ player.prototype.renderVisuals = function(timeSince){
 
     //state init
     switch(this.state){
+      case -3:
+        //spot is locked
+            
+            
+        break;
       case -2:
         
         this.hand = new THREE.Object3D();
         
-        var hideButton = this.createHideButton(); 
-        hideButton.position.z = 50;
-        this.hand.add(hideButton);
+        //var hideButton = this.createHideButton(); 
+        //hideButton.position.z = 50;
+        //this.hand.add(hideButton);
          
         this.chipStack = new THREE.Object3D();
         this.hand.add(this.chipStack);
         this.bettingui = new bettingUI(this);
         //this.bettingui.mesh.rotation.y = -Math.PI/8;  
         this.bettingui.mesh.rotation.x = -Math.PI/2 + Math.PI/4;
-
+        
+        this.optionsui = new optionsUI(this);
+        
+        this.hand.add(this.optionsui.mesh);
         this.hand.add(this.bettingui.mesh);
             
         //this.renderChips();  
@@ -65,7 +73,7 @@ player.prototype.renderVisuals = function(timeSince){
         }
             
         toggleVisible(this.bettingui.mesh, false);    
-        
+        toggleVisible(this.optionsui.mesh, false);
             
         break;
       case 0:
@@ -74,7 +82,7 @@ player.prototype.renderVisuals = function(timeSince){
          
         this.joinButton.mesh.visible = false;
         this.renderChips();
-            
+    
             
         var numPlayers = 0;
         for(var i=0; i<theGame.players.length; i++){
@@ -93,6 +101,8 @@ player.prototype.renderVisuals = function(timeSince){
           theGame.startGameButton = this.startGame.mesh;
           if(this.userId !== globalUserId){
               theGame.startGameButton.visible = false;
+          }else{
+              toggleVisible(this.optionsui.mesh, true);
           }
         } 
         
@@ -194,21 +204,6 @@ player.prototype.win = function(amount, hand){
   black - 100
 
 */
-
- 
-
-
-player.prototype.createHideButton = function(){
-	var geometry = new THREE.CubeGeometry(1, 1, 1);
-	var material = new THREE.MeshBasicMaterial({color:'#ff0000'});
-	var cube = new THREE.Mesh(geometry, material);
-  cube.scale.set(25, 25, 25);
-  cube.position.copy(tableOffset);
-  cube.addBehaviors(toggleCardsBehavior(this));
-  sim.scene.add(cube); 
-  return cube;
-}
-
 
 player.prototype.renderChips = function(){
   renderChips(this.chipStack, this.money);

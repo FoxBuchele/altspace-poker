@@ -1,7 +1,7 @@
 var numArray = [2, 3, 4, 5, 6, 7, 8, 9, 10, "jack", "queen", "king", "ace"];
 
 var suitArray = ["clubs", "diamonds", "hearts", "spades"];
-
+var suitSymbols = ["♣", "♦", "♥", "♠"];
 
 
 
@@ -15,6 +15,10 @@ function card(number, suit){
     rotation: new THREE.Vector3(0, 0, 0)
   };
   this.geom;// = null;
+}
+
+card.prototype.friendlyRepresentation = function(){
+    return suitSymbols[suitArray.indexOf(this.suit)] + " " + this.friendlynumber();
 }
 
 card.prototype.friendlynumber = function(){
@@ -192,8 +196,8 @@ function createHiddenCardGeom(){
 function createCardGeom(theCard, doubleSided, visible){
    doubleSided = doubleSided || false;
    if(typeof theCard.geom !== "undefined"){
-     console.error("We already made the geometry for this card!", theCard);
-     return theCard;  
+     sim.scene.remove(theCard.geom);
+     delete theCard.geom;
    }
 
     console.log('cloning the card models');
@@ -210,6 +214,7 @@ function createCardGeom(theCard, doubleSided, visible){
         material = new THREE.MeshBasicMaterial({color:'#000000'});
     }else{
         material = new THREE.MeshBasicMaterial({color:'#FFFFFF', map: new THREE.Texture(theCard.image)});
+        material.side = THREE.BackSide;
     }
 	//var material = new THREE.MeshBasicMaterial({color:'#FFFFFF', map: new THREE.Texture(theCard.image)});
     for(var j=0; j<cardfront.children.length; j++){
@@ -439,6 +444,7 @@ function game(){
   this.dealer = 0;
   this.better = 0;
 	this.deck = {};
+  this.locked = false;
   this.step = -1;
   this.judge = mainRules;
   //whoever can deal cards
@@ -820,7 +826,11 @@ var texasHoldEm = {
               //broke-ass punks
 
               if(game.dealingOrder[i].money === 0 && game.dealingOrder[i].state !== -1){
-                game.dealingOrder[i].state = -1;
+                if(!game.locked){
+                    game.dealingOrder[i].state = -1;
+                }else{
+                    game.dealingOrder[i].state = -3;
+                }
                 if(i === game.dealer){
                     game.dealer--;  //if this person folds out, pretend like the person right before them was the dealer when we rotate
                 }
