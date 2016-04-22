@@ -415,8 +415,10 @@ function giveCard(cards, toObj, i){
             toRotationTween.onUpdate((function(card){
               return function(value1){ 
                 //rotate the cards to face the players 
-                card.geom.rotation.setFromVector3(card.movementTween.rotation); 
-              } 
+                if(typeof card.geom !== 'undefined'){
+                  card.geom.rotation.setFromVector3(card.movementTween.rotation); 
+                }
+               } 
             }(thisCard)));
             
   
@@ -424,7 +426,9 @@ function giveCard(cards, toObj, i){
             toPlayerTween.onUpdate((function(card){
               return function(value1){
                   //move the cards to the player
-                card.geom.position.copy(card.movementTween.position);
+                if(typeof card.geom !== 'undefined'){
+                    card.geom.position.copy(card.movementTween.position);
+                }
               }
             }(thisCard)));
   
@@ -432,14 +436,15 @@ function giveCard(cards, toObj, i){
               return function(value1){
                 
                 //add the cards to the 'hand' object
-                
-                THREE.SceneUtils.attach(card.geom, sim.scene, hand);
-                hand.updateMatrixWorld();
-                 
-                //our position has updated, so lets update the movementTween
-                card.movementTween.position.copy(card.geom.position); 
-                card.movementTween.rotation.set(card.geom.rotation.x, card.geom.rotation.y, card.geom.rotation.z);
+                if(typeof card.geom !== 'undefined'){
 
+                    THREE.SceneUtils.attach(card.geom, sim.scene, hand);
+                    hand.updateMatrixWorld();
+                 
+                    //our position has updated, so lets update the movementTween
+                    card.movementTween.position.copy(card.geom.position); 
+                    card.movementTween.rotation.set(card.geom.rotation.x, card.geom.rotation.y, card.geom.rotation.z);
+                }
                 
               }
             }(thisCard, toObj)));
@@ -449,8 +454,11 @@ function giveCard(cards, toObj, i){
             toHandTween.onUpdate((function(card){
               return function(value1){
                 //now that cards are parented properly, move them so we can view each card
-                card.geom.position.x = card.movementTween.position.x;
-              }
+                  if(typeof card.geom !== 'undefined'){
+
+                        card.geom.position.x = card.movementTween.position.x;
+                  }
+               }
             }(thisCard)));
            
           
@@ -473,7 +481,9 @@ function toggleCard(thisCard, toggle){
             changeHeightTween.onUpdate((function(card){
               return function(value1){
                 //now that cards are in the correct position, raise them so we can see the cards
-                card.geom.position.y = card.movementTween.position.y;
+                if(typeof card.geom !== 'undefined'){
+                    card.geom.position.y = card.movementTween.position.y;
+                }
               }
             }(thisCard))); 
             
@@ -483,7 +493,9 @@ function toggleCard(thisCard, toggle){
             makeVisibleTween.onUpdate((function(card){
               return function(t){
                   //also rotate the cards
-                  card.geom.rotation.setFromVector3(card.movementTween.rotation);
+                  if(typeof card.geom !== 'undefined'){
+                    card.geom.rotation.setFromVector3(card.movementTween.rotation);
+                  }
               }
             }(thisCard)));
   
@@ -633,15 +645,17 @@ function cardToDeck(card){
                     THREE.SceneUtils.detach(card.geom, card.geom.parent, sim.scene);
                     card.geom.updateMatrixWorld();
                   }
-                  //sim.scene.remove(card.geom); 
-                  toggleVisible(card.geom, false);
-                  //delete card.geom;
+                  card.geom.parent.remove(card.geom); 
+                  //toggleVisible(card.geom, false);
+                  delete card.geom;
               } 
             }(card)));
             var rotToDeck = new TWEEN.Tween(card.movementTween.rotation).to({x:Math.PI/2, y:0, z:0}, 200);
             rotToDeck.onUpdate((function(card){
               return function(t){
-                  card.geom.rotation.setFromVector3(card.movementTween.rotation);
+                  if(typeof card.geom !== 'undefined'){
+                    card.geom.rotation.setFromVector3(card.movementTween.rotation);
+                  }
               } 
             }(card)));
     toTable.chain(posToDeck);

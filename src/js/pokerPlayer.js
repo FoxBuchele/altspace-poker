@@ -31,7 +31,11 @@ player.prototype.renderVisuals = function(timeSince){
     switch(this.state){
       case -3:
         //spot is locked
-            
+        //hide everything
+        toggleVisible(this.bettingui.mesh, false);    
+        toggleVisible(this.optionsui.mesh, false);
+        toggleVisible(this.hand, false);
+        toggleVisible(this.joinButton.mesh, false);
             
         break;
       case -2:
@@ -71,7 +75,8 @@ player.prototype.renderVisuals = function(timeSince){
         if(this.money === 0){
             this.money = startingMoney;  
         }
-            
+        toggleVisible(this.hand, true);
+        toggleVisible(this.joinButton.mesh, true);
         toggleVisible(this.bettingui.mesh, false);    
         toggleVisible(this.optionsui.mesh, false);
             
@@ -80,7 +85,7 @@ player.prototype.renderVisuals = function(timeSince){
         //someone playing, they haven't started yet
         //make buttons and UI
          
-        this.joinButton.mesh.visible = false;
+        toggleVisible(this.joinButton.mesh, false);
         this.renderChips();
     
             
@@ -100,7 +105,7 @@ player.prototype.renderVisuals = function(timeSince){
           this.startGame.mesh.rotation.y = Math.PI/8;  
           theGame.startGameButton = this.startGame.mesh;
           if(this.userId !== globalUserId){
-              theGame.startGameButton.visible = false;
+              toggleVisible(theGame.startGameButton, false);
           }else{
               toggleVisible(this.optionsui.mesh, true);
           }
@@ -108,10 +113,8 @@ player.prototype.renderVisuals = function(timeSince){
         
         break;  
       case 1:
+        toggleVisible(theGame.startGameButton, false);
         //give cards to player
-        if(this.startGame){
-          this.startGame.mesh.visible = false;
-        }
         var offset = 0;
         for(var i=0; i<this.cards.length; i++){
             
@@ -185,14 +188,11 @@ player.prototype.chipColors = {
   "black": 100
 }
 
-player.prototype.win = function(amount, hand){
-  toggleVisible(theGame.winCube, true);
-  theGame.winCube.position.copy(this.hand.position);
+player.prototype.win = function(amount){
   theGame.bettingPot -= amount;
   this.money+= amount;
   makePot();
   this.renderChips();
-  //this.moveChipsFrom(amount, this.chipStack);  
 }
 
 /*
@@ -290,6 +290,8 @@ player.prototype.moveChipsTo = function(amount, where){
 }
 
 player.prototype.bet = function(amount){
+
+    //we may need to split the pot here
   this.money -= amount;
   theGame.bettingPot += amount;
   this.betThisRound += amount;
@@ -298,6 +300,16 @@ player.prototype.bet = function(amount){
   this.renderChips();
     makePot();
     theGame.nextBet();
+}
+player.prototype.betBlind = function(amount, large){
+    //we may need to split the pot here
+    this.money -= amount;
+    theGame.bettingPot += amount;
+    this.betThisRound += amount;
+    theGame.currentBet = this.betThisRound;
+    //this.moveChipsTo(amount, theGame.potHolder);
+    this.renderChips();
+    makePot();
 }
 
 player.prototype.betUpdate = function(amount){
@@ -315,12 +327,43 @@ player.prototype.fold = function(){
       if(this.cards[i].geom.parent.type === "Object3D"){
         THREE.SceneUtils.detach(this.cards[i].geom, this.hand, sim.scene);
         cardToDeck(this.cards[i]);
+      }else{
+          this.cards[i].geom.parent.remove(this.cards[i].geom);
+          delete this.cards[i].geom;
       }
   } 
   this.cards = [];
   this.state = 4;
-  theGame.nextBet();
+    
+  //if we are the authority
+  if(theGame.currentAuthority === globalUserId){
+  //go through each player, if everyone has either folded or has a value < 1, remaining player wins
+      var potentialPlayers = [];
+      for(var i=0; i<theGame.dealingOrder.length; i++){
+           if(theGame.dealingOrder[i].state > 0 && theGame.dealingOrder[i].state < 4){
+               potentialPlayers.push(theGame.dealingOrder[i]);
+           }
+      }
+      
+        if(potentialPlayers.length === 1){
+            sendUpdate({winningPlayer: getSafePlayer(potentialPlayers[0])}, "playerWin", {thenUpdate: true});
+            
+            //TODO: add win, but no showing cards code
+            
+            sendUpdate({toStep: 10}, "changeGameStep");
+            theGame.step = 10;
+            theGame.runClientStep();
+            theGame.runStep(); 
+
+        }else{
+            theGame.nextBet();
+        }
+  }else{
+       theGame.nextBet();
+  }
+    
   
+    
 }
 
 player.prototype.foldUpdate = function(){

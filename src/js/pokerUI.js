@@ -228,10 +228,17 @@ function optionsUI(player){
     var lockButton = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), lockMaterial);
     lockButton.position.x += 85;
     lockButton.position.y += 10;
-    lockButton.position.z += 5;
+    lockButton.position.z += 10;
     lockButton.rotation.z = Math.PI/2;
     slideOutContainer.add(lockButton);
-    
+    /*
+    var unlockButton = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), unlockMaterial);
+    unlockButton.position.x += 85;
+    unlockButton.position.y += 10;
+    unlockButton.position.z += 5;
+    unlockButton.rotation.z = Math.PI/2;
+    //slideOutContainer.add(unlockButton);
+    */
     
    var refreshButton = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), refreshMaterial);
     refreshButton.position.y -= 200;
@@ -244,11 +251,61 @@ function optionsUI(player){
                 console.log('refresh button is active!', obj)
                 obj.addEventListener('cursordown', function(){
                     console.log('reload the page!');
-                    location.reload();
+                    //location.reload();
+                    window.location.href = window.location.href.split("?")[0];
                 });
         }
     })
     refreshButton.updateBehaviors(0);
+    
+    
+    lockButton.addBehaviors({
+        awake: function(obj){
+            
+            
+            
+            obj.addEventListener('cursordown', function(){
+                console.log('clicked!');
+                theGame.locked = !theGame.locked;
+                var pos = new THREE.Vector3();
+                pos.copy(obj.localToWorld(new THREE.Vector3(0, 20, 0)));
+                var quat = obj.getWorldQuaternion();
+                
+                if(theGame.locked){
+                    var safePlayers = [];
+                    for(var i=0; i<theGame.players.length; i++){
+                        if(theGame.players[i].state >= 0){
+                            safePlayers.push(i);
+                        }
+                    }
+                    var message = "Locked the game!";
+                    var locked = new errorMessage({
+                            timeToDisappear: 2000,
+                            messageType: 0,
+                            message: message,
+                            pos: pos,
+                            rot: quat,
+                            scale: 0.4
+                        });
+                    sendUpdate({playerIndexes: safePlayers}, "lockGame", {thenUpdate: true});
+                }else{
+                    var message = "Unlocked the game!";
+                    var unlocked = new errorMessage({
+                            timeToDisappear: 2000,
+                            messageType: 1,
+                            message: message,
+                            pos: pos,
+                            rot: quat,
+                            scale: 0.4
+                        });
+                    sendUpdate({}, "unlockGame", {thenUpdate: true});
+                }
+            })
+        }
+    })
+    lockButton.updateBehaviors(0);
+    
+    
     
     this.mesh.add(slideOutContainer);
 
@@ -444,12 +501,9 @@ function bettingUIInteractions(pl, updateBet, buttonArray){
                     var handObj = pl.hand;
                     var uiObj = pl.bettingui.mainMesh;
                     var pos = new THREE.Vector3();
-                    pos.copy(uiObj.localToWorld(new THREE.Vector3(0, 50, 0)));
-
+                    pos.copy(uiObj.localToWorld(new THREE.Vector3(0, 0.3, 0)));
                     var quat = uiObj.getWorldQuaternion();
-
-
-
+                    
                     var message = "Unauthorized!";
                     var unauthorized = new errorMessage({
                             timeToDisappear: 3000,
@@ -549,7 +603,7 @@ function bettingUIInteractions(pl, updateBet, buttonArray){
     console.log('got a click event');
     if(!this.allowedTo()){return false};
     if(this.player.currentBet + amount <= this.player.money && (this.player.currentBet + amount) >= 0){ //this should be the min bet actually
-      if(this.player.currentBet+amount >= theGame.currentBet){
+      if(this.player.betThisRound + this.player.currentBet + amount >= theGame.currentBet){
         this.player.currentBet += amount;
         this.updateBet(this.player.currentBet);
       }
@@ -674,6 +728,9 @@ function startGame(player){
       
       
       if(allowedToDoThis()){
+        theGame.resetDealers();
+        theGame.dealer = theGame.dealingOrder.indexOf(pl);
+        theGame.rotateDealers();
         theGame.step = 0;//do the initialization in the game controller
         //sendUpdate({stepUpdate: 0}, "startGame");
         theGame.runStep();

@@ -196,7 +196,7 @@ function createHiddenCardGeom(){
 function createCardGeom(theCard, doubleSided, visible){
    doubleSided = doubleSided || false;
    if(typeof theCard.geom !== "undefined"){
-     sim.scene.remove(theCard.geom);
+     theCard.geom.parent.remove(theCard.geom);
      delete theCard.geom;
    }
 
@@ -233,28 +233,10 @@ function createCardGeom(theCard, doubleSided, visible){
         var cardback = theGame.models.CardBack.clone();
         card.add(cardback);
     }
-    
-    //card.add(cardback);
-    /*
-  var cardBack; 
-  if(doubleSided){
-    cardBack = new THREE.Mesh(geometry, material); 
-  }else{
-    cardBack = new THREE.Mesh(geometry, materialBack);
-
-  }
-  cardBack.rotation.y = Math.PI;
-  
-  var card = new THREE.Object3D();
-  card.add(cardFront);
-  card.add(cardBack);*/
   
   card.position.copy(tableOffset);
   card.position.y += cardTemplate.height/2;
   
-  //card.addBehaviors(
-	//		alt.Object3DSync({position: true, rotation: true})
-	//	);
   sim.scene.add(card);  
   theCard.geom = card;
   return card; 
@@ -443,6 +425,8 @@ function game(){
   this.bettingOrder = [];
   this.dealer = 0;
   this.better = 0;
+  this.smallBlind = 5;
+  this.bigBlind = 10;
 	this.deck = {};
   this.locked = false;
   this.step = -1;
@@ -535,7 +519,7 @@ game.prototype.setStep = function(theStep){
 
 game.prototype.nextBet = function(){
   //sets the state of the current player back to 'wait' (2) and sets state of next player to 'bet' (3)
-  
+    
   //if we only have one player left, they win
   //if we have multiple players left
   /*if(this.bettingOrder.length === 1 && (this.step !== this.logic.steps.length - 2)){ 
@@ -549,12 +533,13 @@ game.prototype.nextBet = function(){
   */
     
     
-  //if next player hasn't folded
+  //if this player hasn't folded
   if(this.dealingOrder[this.bettingOrder[this.better]].state !== 4){
     //set them back to 'waiting' state
     this.dealingOrder[this.bettingOrder[this.better]].state = 2;
   }
   this.better++;
+
   this.startBetting();
 
 } 
@@ -590,10 +575,17 @@ game.prototype.startBetting = function(){
 
 var betStep = function(game){
         toggleVisible(game.betCube, true);// game.betCube.visible = true;
-        game.currentBet = 0;
         game.resetBetters();
         game.better = 0;
-		game.dealingOrder[game.bettingOrder[game.better]].state = 3;
+        game.currentBet = 0;
+        if(game.step === 2){
+            game.dealingOrder[game.bettingOrder[game.better]].betBlind(game.smallBlind, false);
+            game.nextBet();
+            game.dealingOrder[game.bettingOrder[game.better]].betBlind(game.bigBlind, false);
+            game.nextBet();
+        }else{
+            game.dealingOrder[game.bettingOrder[game.better]].state = 3;
+        }
 
 }
 
@@ -606,15 +598,11 @@ var texasHoldEm = {
     {   //0
       exec: function(game){
         //this is run on the very first hand only
-        game.dealer = 0;
+        //game.dealer = 0;
         game.deck.shuffle();
-        game.rotateDealers();
         game.currentAuthority = globalUserId;
         sendUpdate({authority:globalUserId, dealer: game.dealer, deck: getSafeCards({cards: game.deck.shuffledDeck})}, "startHand");
-
         game.start();
-          
-          
         //since only the dealer will do this step, we can assume the globalUserId is the dealer
         
       }
@@ -628,8 +616,7 @@ var texasHoldEm = {
                 game.runClientStep();
             },
 			exec: function(game){
-						//deal 2 to players                
-                //game.rotateDealers();
+				//deal 2 to players                
                 for(var i=0; i<game.players.length; i++){
                   if(game.players[i].state > -1 && game.players[i].cards.length === 0){
                     game.deck.dealTo(game.players[i], 2);
@@ -638,16 +625,7 @@ var texasHoldEm = {
                   }
                 }
                 sendUpdate({toStep: 1}, "changeGameStep", {thenUpdate: true});
-                //sendUpdate({toStep: 2}, "changeGameStep", {thenUpdate: true});
-                //game.step = 2;
-                /*
-                //takes about 5s to get the cards
-                window.setTimeout(function(){
-                    if(game.step === 2){
-                        game.runClientStep();
-                    }
-                }, 5000);
-                */
+                
             }
                 
 			
@@ -680,22 +658,11 @@ var texasHoldEm = {
                                 
                 //make a show of discarding a card?
                 var dealTo = [];
-                /*for(var i=0; i<game.bettingOrder.length; i++){
-                    dealTo.push(game.dealingOrder[game.bettingOrder[i]]);
-                }*/
                 dealTo.push(game.sharedCards);
                 game.deck.dealTo(dealTo, 3);
                 sendUpdate({sharedCards: getSafeCards(game.sharedCards)}, "dealSharedCards");
                 sendUpdate({toStep: 3}, "changeGameStep", {thenUpdate: true});
-                //game.runClientStep();
-                //sendUpdate({toStep: 4}, "changeGameStep", {thenUpdate: true});
-                //game.step = 4;
-                
-                /*window.setTimeout(function(){
-                    if(game.step === 4){
-                        game.runClientStep();
-                    }
-                }, 2000);*/
+
             }
                 
 		},
@@ -724,17 +691,7 @@ var texasHoldEm = {
                     dealTo.push(game.sharedCards);
                     game.deck.dealTo(dealTo, 1);
                     sendUpdate({sharedCards:getSafeCards({cards:[game.sharedCards.cards[3]]})}, "dealSharedCards");
-                    sendUpdate({toStep: 5}, "changeGameStep", {thenUpdate: true});
-                    //game.runClientStep();
-                    //sendUpdate({toStep: 6}, "changeGameStep", {thenUpdate: true});
-                    //game.step = 6;
-                
-                    /*window.setTimeout(function(){
-                        if(game.step === 6){
-                            game.runClientStep();
-                        }
-                    }, 2000);*/ 
-                    
+                    sendUpdate({toStep: 5}, "changeGameStep", {thenUpdate: true});                    
             
 			}
 		},
@@ -765,20 +722,7 @@ var texasHoldEm = {
                     dealTo.push(game.sharedCards);
                     game.deck.dealTo(dealTo, 1);
                     sendUpdate({sharedCards:getSafeCards({cards:[game.sharedCards.cards[4]]})}, "dealSharedCards");
-                    sendUpdate({toStep: 7}, "changeGameStep", {thenUpdate: true});
-                    //game.runClientStep();
-                    //sendUpdate({toStep: 8}, "changeGameStep", {thenUpdate: true});
-                   // game.step = 8;
-
-                /*
-                    window.setTimeout(function(){
-                        if(game.step === 8){
-                            game.runClientStep();
-                        }
-                      
-                    }, 2000); 
-                  */  
-                
+                    sendUpdate({toStep: 7}, "changeGameStep", {thenUpdate: true});                
                 
 			}
 		},
@@ -793,6 +737,9 @@ var texasHoldEm = {
         
                     var highestHand = {value:-2};
                     var winningPlayer;
+                
+                    game.resetBetters();
+                
                     for(var i=0; i<game.bettingOrder.length; i++){
                       if(game.judge.judge(game.dealingOrder[game.bettingOrder[i]].cards).value > highestHand.value){
                         highestHand = game.judge.judge(game.dealingOrder[game.bettingOrder[i]].cards);
@@ -800,15 +747,15 @@ var texasHoldEm = {
                       }
                     }
                     console.log(winningPlayer, "wins with", highestHand);
-                    winningPlayer.win(game.bettingPot, highestHand);
-                    sendUpdate({winningPlayer: getSafePlayer(winningPlayer), hand: highestHand}, "playerWin");
+                    sendUpdate({winningPlayer: getSafePlayer(winningPlayer), hand: highestHand}, "playerWin", {thenUpdate: true});
+                    
+                
                     sendUpdate({toStep: 9}, "changeGameStep", {thenUpdate: true});
-                    //game.runClientStep();
                     sendUpdate({toStep: 10}, "changeGameStep");
                     game.step = 10;
                     game.runClientStep();
                     game.runStep(); //kick out players without money, transfer control
-
+                
                 
 			}
 		},
@@ -837,19 +784,18 @@ var texasHoldEm = {
               }
             }
             
-            game.step = 0;
-            
-            game.rotateDealers();
-            
             var playerStates = [];
             for(var i=0; i<game.players.length; i++){
                 game.players[i].cards = [];
                 playerStates.push(getSafePlayer(game.players[i]));
             }
+            
+            game.rotateDealers();
           
             sendUpdate({transferControl: game.dealingOrder[game.dealer].spot, endstatePlayers: playerStates}, "transferControl", {thenUpdate: true});
           
-      }
+    
+        }
     }
 	]
 }

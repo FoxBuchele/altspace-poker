@@ -97,6 +97,26 @@ function processUpdates(newUpdates){
             case "startedLevel":
                 
                 break;
+            case "unlockGame":
+                
+                 for(var i=0; i<theGame.players.length; i++){
+                    if(theGame.players[i].state === -3){
+                         theGame.players[i].state = -1;     //set them back to not joined
+                    }
+                }
+                
+                break;
+            case "lockGame":
+                
+                //data.playerIndexes will store the players we don't set to -3;
+                
+                for(var i=0; i<theGame.players.length; i++){
+                    if(data.playerIndexes.indexOf(i) === -1){   //set any not joined to 'locked'
+                         theGame.players[i].state = -3;
+                    }
+                }
+                
+                break;
             case "registerPlayer":
                 
                 theGame.players[data.registerIndex].userId = data.userId;
@@ -154,6 +174,7 @@ function processUpdates(newUpdates){
                 theGame.resetDealers();
                 //theGame.step = 1;
                 theGame.dealer = data.dealer;
+                delete lastMessage;
                // theGame.runClientStep();
                 
                 break;
@@ -220,41 +241,65 @@ function processUpdates(newUpdates){
             case "playerWin":
                 
                 var thisPlayer = theGame.players[data.winningPlayer.spot];
-                thisPlayer.win(game.bettingPot, data.hand);
-
+                thisPlayer.win(theGame.bettingPot);
+                toggleVisible(theGame.betCube, false);
+                
                 var handObj = thisPlayer.hand;
-                var pos = new THREE.Vector3();
-                pos.copy(handObj.position);
+                    var pos = new THREE.Vector3();
+                    pos.copy(handObj.position);
                 
                 var forwardDirection = new THREE.Vector3();
-                forwardDirection.copy(handObj.userData.forward);
-                forwardDirection.multiplyScalar(-100);
-                pos.add(forwardDirection);
-                pos.y += 25;
-                var message = "Player won with "+data.hand.name+"!";
-                lastMessage = {
-                        timeToDisappear: 5000,
-                        messageType: 2,
-                        message: message,
-                        pos: pos,
-                        rot: handObj.quaternion
-                    };
-                var cardMessage = "";
-                cardMessage += theGame.deck.getCard(thisPlayer.cards[0]).friendlyRepresentation();
-                cardMessage += ", ";
-                cardMessage += theGame.deck.getCard(thisPlayer.cards[1]).friendlyRepresentation();
-                var pos2 = new THREE.Vector3();
-                pos2.copy(pos);
-                pos2.y += 50;
-                var whichCardsMessage = new errorMessage({
-                    timeToDisappear: 5000,
-                    messageType: 3,
-                    message: cardMessage,
-                    pos: pos2,
-                    rot: handObj.quaternion
-                });
+                    forwardDirection.copy(handObj.userData.forward);
+                    forwardDirection.multiplyScalar(-100);
+                    pos.add(forwardDirection);
+                    pos.y += 25;
                 
-                //show this players cards above their head
+                if(typeof data.hand !== 'undefined'){
+                    //show this players cards above their head
+
+                    var message = "Player won last hand with "+data.hand.name+"!";
+                    var winMessage = new errorMessage({
+                            timeToDisappear: 5000,
+                            messageType: 2,
+                            message: message,
+                            pos: pos,
+                            rot: handObj.quaternion
+                    });
+                    delete lastMessage;
+                    var cardMessage = "";
+                    cardMessage += theGame.deck.getCard(thisPlayer.cards[0]).friendlyRepresentation();
+                    cardMessage += ", ";
+                    cardMessage += theGame.deck.getCard(thisPlayer.cards[1]).friendlyRepresentation();
+                    for(var i=0; i<theGame.sharedCards.cards.length; i++){
+                        cardMessage += ", ";
+                        cardMessage += theGame.deck.getCard(theGame.sharedCards.cards[i]).friendlyRepresentation();
+                    }
+                    var pos2 = new THREE.Vector3();
+                    pos2.copy(pos);
+                    pos2.y += 50;
+                    var whichCardsMessage = new errorMessage({
+                        timeToDisappear: 8000,
+                        messageType: 3,
+                        message: cardMessage,
+                        pos: pos2,
+                        rot: handObj.quaternion
+                    });
+                }else{
+                    
+                    //forfeit, don't have to show cards!
+                    
+                    var message = "Player won by forfeit!";
+                    var winMessage = new errorMessage({
+                            timeToDisappear: 5000,
+                            messageType: 2,
+                            message: message,
+                            pos: pos,
+                            rot: handObj.quaternion
+                    });
+                    delete lastMessage;
+                    
+                }
+                
                 
                 
                 break;
@@ -303,7 +348,7 @@ function processUpdates(newUpdates){
                         //then deal the cards
                         //sendUpdate({authority:globalUserId, deck: getSafeCards({cards: game.deck.shuffledDeck})}, "startHand");
                         theGame.start();
-                    }, 10);
+                    }, 5000);
                     
                     
                 }
