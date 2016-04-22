@@ -73,7 +73,8 @@ function getSafeCards(player){
 
 
 function processUpdates(newUpdates){
-    console.log('processing', newUpdates)
+    var logstring = newUpdates.map(function(elem){return elem.title}).join('\n')
+    console.log('processing', logstring)
     
     var updateType, data;
         
@@ -165,6 +166,10 @@ function processUpdates(newUpdates){
                 //theGame.currentAuthority = data.authority;
                 authority = data.authority;
                 
+                
+                
+                
+                
                 theGame.deck.arrange(data.deck);
                   for(var i=0; i<theGame.players.length; i++){
                     if(theGame.players[i].state === 0){    //they're  waiting
@@ -242,6 +247,7 @@ function processUpdates(newUpdates){
                 
                 var thisPlayer = theGame.players[data.winningPlayer.spot];
                 thisPlayer.win(theGame.bettingPot);
+                toggleVisible(theGame.winCube, false);
                 toggleVisible(theGame.betCube, false);
                 
                 var handObj = thisPlayer.hand;
@@ -300,6 +306,8 @@ function processUpdates(newUpdates){
                     
                 }
                 
+                theGame.resetCards();
+
                 
                 
                 break;
@@ -325,12 +333,12 @@ function processUpdates(newUpdates){
                     theGame.deck.shuffle();
                     authority = globalUserId;
                     
-                    //create a new round record, send it to everyone with the 
+                    //create a new round record, send it to everyone
                     
                     //start level
                     setTimeout(function(){
                         theGame.roundRecord = [{title: "startedLevel", timestamp: Date.now()}];
-                        //lets finish reading all the updates first
+                        //lets wait 5 seconds before moving on
                         //register players
 
                         for(var i=0; i<theGame.players.length; i++){
@@ -342,7 +350,7 @@ function processUpdates(newUpdates){
 
                         }
 
-                        sendUpdate({authority:globalUserId, deck: getSafeCards({cards: theGame.deck.shuffledDeck}), dealer: theGame.dealer},"startHand", {overwriteAll: true});
+                        sendUpdate({authority:globalUserId, deck: getSafeCards({cards: theGame.deck.shuffledDeck}), dealer: theGame.dealer},"startHand");
 
                         //push all these updates
                         //then deal the cards
@@ -351,8 +359,13 @@ function processUpdates(newUpdates){
                     }, 5000);
                     
                     
+                }else{
+                    theGame.roundRecord = [];
+                    
+                    //we're about to get a hell of a lot of new updates
+                    authority = theGame.players[data.transferControl].userId;
+                    
                 }
-                
                 
                 break;
             default:
@@ -378,6 +391,9 @@ function processUpdates(newUpdates){
     }
     Array.prototype.push.apply(theGame.roundRecord, newUpdates);
     console.log("updates are now", theGame.roundRecord, newUpdates);
+    
+    var logstring = theGame.roundRecord.map(function(elem){return elem.title}).join('\n')
+    console.log('updates are now', logstring)
 }
 
 
@@ -487,7 +503,7 @@ function mergeDeep(target, source) {
       }
     }); 
   }
-  return target; 
+  return target;
 }
 
 
@@ -500,16 +516,21 @@ function sendUpdate(extraData, title, options){
   title = title || "";
   options = options || {};
   console.groupCollapsed("Sending update '"+ title + "'");
-  if(typeof options.overwriteAll !== "undefined" && options.overwriteAll === true){
-      theGame.roundRecord.push({title: title, timestamp: Date.now(), data: extraData});
-      theGame.syncInstance.update({title: title, data: theGame.roundRecord}); 
-  }
   if(typeof options.thenUpdate === "undefined" || options.thenUpdate === false){
     theGame.roundRecord.push({title: title, timestamp: Date.now(), data: extraData});
     theGame.syncInstance.update({title: title, data: theGame.roundRecord}); 
   }else{
-    theGame.syncInstance.update({title: title, data: theGame.roundRecord.concat([{title: title, timestamp: Date.now(), data: extraData}])}); 
+    //should process this update immediately
+    var time = Date.now();
+    var newArr = theGame.roundRecord.concat([{title: title, timestamp: time, data: extraData}])
+   // newArr.push({title: title, timestamp: Date.now(), data: extraData});
+    
+    theGame.syncInstance.update({title: title, data: newArr});
+//    processUpdates([{title: title, timestamp: time, data: extraData}]);
 
+    
+    
+      
   }
 
   console.log(extraData);

@@ -448,6 +448,30 @@ game.prototype.start = function(){
   this.runStep();
 }
 
+game.prototype.resetCards = function(){
+    
+                var player;
+                for(var i=0; i<this.players.length; i++){
+                    player = this.players[i];
+                    for(var j=0; j<player.cards.length; j++){
+                        var geom = player.cards[j].geom;
+                        delete player.cards[j].geom;
+                        cardToDeck(geom);
+                    }
+                    player.cards = [];
+                    toggleVisible(player.bettingui.mesh, false);
+                }
+                
+                for(var i=0; i<this.sharedCards.length; j++){
+                    var geom = this.sharedCards.geom;
+                    delete this.sharedCards.geom;
+                    cardToDeck(geom);
+                }
+                this.sharedCards.cards = [];
+    
+}
+
+
 game.prototype.resetBetters = function(){
   var bettingOrder = [];
   for(var i=0; i<this.dealingOrder.length; i++){
@@ -507,31 +531,10 @@ game.prototype.runClientStep = function(){
 
 game.prototype.runStep = function(){
   this.logic.steps[this.step].exec(this);
-  //console.log('sending step', this.step);
-  //theGame.syncInstance.update(getSafeGameObj());
 }
-/*
-game.prototype.setStep = function(theStep){
-  console.log('recieving a game step update');
-  this.step = theStep;
-  this.runStep(this);
-}*/
 
 game.prototype.nextBet = function(){
   //sets the state of the current player back to 'wait' (2) and sets state of next player to 'bet' (3)
-    
-  //if we only have one player left, they win
-  //if we have multiple players left
-  /*if(this.bettingOrder.length === 1 && (this.step !== this.logic.steps.length - 2)){ 
-      //take to judging
-      this.step = this.logic.steps.length - 2;
-      this.runStep();
-      return;
-  }
-   TODO: rewrite this so only the host does this step
-  
-  */
-    
     
   //if this player hasn't folded
   if(this.dealingOrder[this.bettingOrder[this.better]].state !== 4){
@@ -731,7 +734,6 @@ var texasHoldEm = {
 		},
 		{ //9
             execClient: function(game){
-                toggleVisible(game.betCube, false);
             },
 			exec: function(game){
         
@@ -748,12 +750,9 @@ var texasHoldEm = {
                     }
                     console.log(winningPlayer, "wins with", highestHand);
                     sendUpdate({winningPlayer: getSafePlayer(winningPlayer), hand: highestHand}, "playerWin", {thenUpdate: true});
-                    
-                
-                    sendUpdate({toStep: 9}, "changeGameStep", {thenUpdate: true});
-                    sendUpdate({toStep: 10}, "changeGameStep");
+                    //sendUpdate({toStep: 10}, "changeGameStep");
                     game.step = 10;
-                    game.runClientStep();
+                   // game.runClientStep();
                     game.runStep(); //kick out players without money, transfer control
                 
                 
@@ -762,8 +761,7 @@ var texasHoldEm = {
     { //10
         
         execClient: function(game){
-            toggleVisible(game.winCube, false);
-            game.cardsToDeck();
+            
         },
       exec: function(game){
         

@@ -327,6 +327,7 @@ player.prototype.fold = function(){
       if(this.cards[i].geom.parent.type === "Object3D"){
         THREE.SceneUtils.detach(this.cards[i].geom, this.hand, sim.scene);
         cardToDeck(this.cards[i]);
+        delete this.cards[i].geom;
       }else{
           this.cards[i].geom.parent.remove(this.cards[i].geom);
           delete this.cards[i].geom;

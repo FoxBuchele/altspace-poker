@@ -685,15 +685,14 @@ function cardToDeck(card){
             }(card)));
             posToDeck.onComplete((function(card){
               return function(t){
-                  if(card.geom.parent.type === "Object3D"){ 
-                    THREE.SceneUtils.detach(card.geom, card.geom.parent, sim.scene);
-                    card.geom.updateMatrixWorld();
+                  if(card.parent.type === "Object3D"){ 
+                    THREE.SceneUtils.detach(card, card.parent, sim.scene);
+                    card.updateMatrixWorld();
                   }
-                  card.geom.parent.remove(card.geom); 
+                  card.parent.remove(card.geom); 
                   //toggleVisible(card.geom, false);
-                  delete card.geom;
               } 
-            }(card)));
+            }(card.geom)));
             var rotToDeck = new TWEEN.Tween(card.movementTween.rotation).to({x:Math.PI/2, y:0, z:0}, 200);
             rotToDeck.onUpdate((function(card){
               return function(t){
