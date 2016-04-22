@@ -75,6 +75,33 @@ var menuTexImg = document.createElement('img');
 menuTexImg.src = "assets/Models/MenuTexture.png";
 var menuMat = new THREE.MeshBasicMaterial({map: new THREE.Texture(menuTexImg)});
 
+
+var blackTexImg = document.createElement('img');
+blackTexImg.src = "assets/Models/ChipTextureBlack.png";
+var blueTexImg = document.createElement('img');
+blueTexImg.src = "assets/Models/ChipTextureBlue.png";
+var greenTexImg = document.createElement('img');
+greenTexImg.src = "assets/Models/ChipTextureGreen.png";
+var redTexImg = document.createElement('img');
+redTexImg.src = "assets/Models/ChipTextureRed.png";
+var whiteTexImg = document.createElement('img');
+whiteTexImg.src = "assets/Models/ChipTextureWhite.png";
+
+var blackMat = new THREE.MeshBasicMaterial({map: new THREE.Texture(blackTexImg)});
+var blueMat = new THREE.MeshBasicMaterial({map: new THREE.Texture(blueTexImg)});
+var greenMat = new THREE.MeshBasicMaterial({map: new THREE.Texture(greenTexImg)});
+var redMat = new THREE.MeshBasicMaterial({map: new THREE.Texture(redTexImg)});
+var whiteMat = new THREE.MeshBasicMaterial({map: new THREE.Texture(whiteTexImg)});
+
+var chipMatContainer = {
+    black: blackMat,
+    blue: blueMat,
+    green: greenMat,
+    red: redMat,
+    white: whiteMat
+}
+
+
 var basicMat = new THREE.MeshBasicMaterial({color: "#FFFFFF"});
 
 
@@ -151,7 +178,6 @@ function ready(firstInstance) {
                 for(var j=0; j<req.objects[i].children.length; j++){
                      var group = req.objects[i].children[j];
                      group.material = models.materials[i];
-                    
                 }
                 theGame.models[models.fileBase[i]] = req.objects[i];
                 
@@ -336,7 +362,7 @@ function makeChipStack(amount, spacing){
   var thisStack = 0;
   var numChips = 0;
   var cursor = 60;
-  spacing = spacing || 10; 
+  spacing = spacing || 15; 
   
   var chipStack = new THREE.Object3D();
   
@@ -344,7 +370,7 @@ function makeChipStack(amount, spacing){
     if(theMoney < 5){
        var whiteChips = createChipStack(theMoney, "white");
        chipStack.add(whiteChips);
-       whiteChips.position.y += theMoney/2;
+       //whiteChips.position.y += theMoney/2;
        whiteChips.position.x = cursor;
        theMoney = 0; 
     }else if(theMoney < 10){
@@ -355,7 +381,7 @@ function makeChipStack(amount, spacing){
       }
       var redChips = createChipStack(numChips, "red");
       chipStack.add(redChips);
-      redChips.position.y += numChips/2;
+      //redChips.position.y += numChips/2;
       redChips.position.x = cursor;
     }else if(theMoney < 25){
       numChips = 0;
@@ -365,7 +391,7 @@ function makeChipStack(amount, spacing){
       }
       var blueChips = createChipStack(numChips, "blue");
       chipStack.add(blueChips); 
-      blueChips.position.y += numChips/2;
+      //blueChips.position.y += numChips/2;
       blueChips.position.x = cursor;    
     }else if(theMoney < 100){
       numChips = 0;
@@ -375,7 +401,7 @@ function makeChipStack(amount, spacing){
       }
       var greenChips = createChipStack(numChips, "green");
       chipStack.add(greenChips);
-      greenChips.position.y += numChips/2;
+      //greenChips.position.y += numChips/2;
       greenChips.position.x = cursor;
       
     }else{
@@ -386,7 +412,7 @@ function makeChipStack(amount, spacing){
       }
       var blackChips = createChipStack(numChips, "black");
       chipStack.add(blackChips);
-      blackChips.position.y += numChips/2;
+      //blackChips.position.y += numChips/2;
       blackChips.position.x = cursor;
     } 
     cursor += spacing;
@@ -397,11 +423,29 @@ function makeChipStack(amount, spacing){
 
 function createChipStack(amount, denominationColor){
   
-    var geometry = new THREE.CylinderGeometry( 5, 5, amount, 6);
-    var material = new THREE.MeshBasicMaterial( {color: denominationColor} );
-    var cylinder = new THREE.Mesh( geometry, material );
+    //var geometry = new THREE.CylinderGeometry( 5, 5, amount, 6);
+    //var material = new THREE.MeshBasicMaterial( {color: denominationColor} );
+    var chip = theGame.models.PokerChip.clone();
+    
+    chip.scale.set(200, 200, 200);
+    
+    for(var i=0; i<chip.children.length; i++){
+        var group = chip.children[i];
+        group.material = chipMatContainer[denominationColor];
+    }
+    
+    var group = new THREE.Object3D();
+    
+    var heightOffset = 1.35;
+    
+    for(var i=0; i<amount; i++){
+        var thisChip = chip.clone();
+        thisChip.position.y += i*heightOffset;
+        group.add(thisChip);
+    }
+    
     //cylinder.position.copy(tableOffset);
-    return cylinder;
+    return group;
 }
 
 function giveCard(cards, toObj, i){ 
