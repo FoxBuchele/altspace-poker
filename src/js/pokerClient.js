@@ -31,7 +31,7 @@ var tableOffset = new THREE.Vector3(0, -150, 0)
 
 var potPosition = new THREE.Vector3();
 //potPosition.copy(tableOffset);
-potPosition.set(175, tableOffset.y-19, 0);
+potPosition.set(175, tableOffset.y - 18.5, 0);
 
 var cardTemplate = {
   width: 25,
@@ -351,7 +351,11 @@ function toggleCardsBehavior(pl){
 
 function makePot(){
   //make a chipstack of theChips, at thePotHolder
-  renderChips(theGame.potHolder, theGame.bettingPot);
+  var amount = 0;
+  for(var i=0; i<theGame.bettingPots.length; i++){
+      amount += theGame.bettingPots[i].amount;
+  }
+  renderChips(theGame.potHolder, amount);
 }
 
 
@@ -673,34 +677,35 @@ function cardsToDeck(){
    
 }
 
-function cardToDeck(card){ 
-    card.movementTween.position.copy(card.geom.position); 
-    card.movementTween.rotation.copy(card.geom.rotation);
-    var toTable = new TWEEN.Tween(card.movementTween.position).to({y:tableOffset.y}, 200);
-            var posToDeck = new TWEEN.Tween(card.movementTween.position).to(tableOffset, 1000);
-            posToDeck.onUpdate((function(card){
+function cardToDeck(card){
+    var movementTween = card.movementTween;
+    var geom = card.geom;
+    movementTween.position.copy(geom.position); 
+    movementTween.rotation.copy(geom.rotation);
+    var toTable = new TWEEN.Tween(movementTween.position).to({y:tableOffset.y}, 200);
+            var posToDeck = new TWEEN.Tween(movementTween.position).to(tableOffset, 1000);
+            posToDeck.onUpdate((function(geom, movementTween){
               return function(t){
-                  card.geom.position.copy(card.movementTween.position);
+                  geom.position.copy(movementTween.position);
               } 
-            }(card)));
-            posToDeck.onComplete((function(card){
+            }(geom, movementTween)));
+            posToDeck.onComplete((function(geom){
               return function(t){
-                  if(card.parent.type === "Object3D"){ 
-                    THREE.SceneUtils.detach(card, card.parent, sim.scene);
-                    card.updateMatrixWorld();
+                  if(geom.parent.type === "Object3D"){ 
+                    THREE.SceneUtils.detach(geom, geom.parent, sim.scene);
+                    geom.updateMatrixWorld();
                   }
-                  card.parent.remove(card.geom); 
-                  //toggleVisible(card.geom, false);
+                  geom.parent.remove(geom); 
               } 
-            }(card.geom)));
-            var rotToDeck = new TWEEN.Tween(card.movementTween.rotation).to({x:Math.PI/2, y:0, z:0}, 200);
-            rotToDeck.onUpdate((function(card){
+            }(geom)));
+            var rotToDeck = new TWEEN.Tween(movementTween.rotation).to({x:Math.PI/2, y:0, z:0}, 200);
+            rotToDeck.onUpdate((function(geom, movementTween){
               return function(t){
-                  if(typeof card.geom !== 'undefined'){
-                    card.geom.rotation.setFromVector3(card.movementTween.rotation);
+                  if(typeof geom !== 'undefined'){
+                    geom.rotation.setFromVector3(card.movementTween.rotation);
                   }
               } 
-            }(card)));
+            }(geom, movementTween)));
     toTable.chain(posToDeck);
     toTable.start();
     //posToDeck.start();

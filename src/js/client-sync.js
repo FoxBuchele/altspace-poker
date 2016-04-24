@@ -88,12 +88,13 @@ function processUpdates(newUpdates){
     var indexOfError = 0;
     try{
         
-    var lastMessage;
+    var lastMessage = false;
     for(var x=0; x<newUpdates.length; x++){
         indexOfError = x;
         updateType = newUpdates[x].title;
         data = newUpdates[x].data;
         console.log("processing update", newUpdates[x]);
+        theGame.roundRecord.push(newUpdates[x]);
         switch(updateType){
             case "startedLevel":
                 
@@ -179,7 +180,7 @@ function processUpdates(newUpdates){
                 theGame.resetDealers();
                 //theGame.step = 1;
                 theGame.dealer = data.dealer;
-                delete lastMessage;
+                lastMessage = false;
                // theGame.runClientStep();
                 
                 break;
@@ -245,66 +246,70 @@ function processUpdates(newUpdates){
                 break;
             case "playerWin":
                 
-                var thisPlayer = theGame.players[data.winningPlayer.spot];
-                thisPlayer.win(theGame.bettingPot);
-                toggleVisible(theGame.winCube, false);
-                toggleVisible(theGame.betCube, false);
-                
-                var handObj = thisPlayer.hand;
-                    var pos = new THREE.Vector3();
-                    pos.copy(handObj.position);
-                
-                var forwardDirection = new THREE.Vector3();
-                    forwardDirection.copy(handObj.userData.forward);
-                    forwardDirection.multiplyScalar(-100);
-                    pos.add(forwardDirection);
-                    pos.y += 25;
-                
-                if(typeof data.hand !== 'undefined'){
-                    //show this players cards above their head
+                    var thisPlayer = theGame.players[data.winningPlayer.spot];
 
-                    var message = "Player won last hand with "+data.hand.name+"!";
-                    var winMessage = new errorMessage({
-                            timeToDisappear: 5000,
-                            messageType: 2,
-                            message: message,
-                            pos: pos,
-                            rot: handObj.quaternion
-                    });
-                    delete lastMessage;
-                    var cardMessage = "";
-                    cardMessage += theGame.deck.getCard(thisPlayer.cards[0]).friendlyRepresentation();
-                    cardMessage += ", ";
-                    cardMessage += theGame.deck.getCard(thisPlayer.cards[1]).friendlyRepresentation();
-                    for(var i=0; i<theGame.sharedCards.cards.length; i++){
+                    //rewrite this so the player can only win the pots they fulfilled
+                    thisPlayer.win();
+
+
+                    toggleVisible(theGame.winCube, false);
+                    toggleVisible(theGame.betCube, false);
+
+                    var handObj = thisPlayer.hand;
+                        var pos = new THREE.Vector3();
+                        pos.copy(handObj.position);
+
+                    var forwardDirection = new THREE.Vector3();
+                        forwardDirection.copy(handObj.userData.forward);
+                        forwardDirection.multiplyScalar(-100);
+                        pos.add(forwardDirection);
+                        pos.y += 25;
+
+                    if(typeof data.hand !== 'undefined'){
+                        //show this players cards above their head
+
+                        var message = "Player won last hand with "+data.hand.name+"!";
+                        var winMessage = new errorMessage({
+                                timeToDisappear: 5000,
+                                messageType: 2,
+                                message: message,
+                                pos: pos,
+                                rot: handObj.quaternion
+                        });
+                        delete lastMessage;
+                        var cardMessage = "";
+                        cardMessage += theGame.deck.getCard(thisPlayer.cards[0]).friendlyRepresentation();
                         cardMessage += ", ";
-                        cardMessage += theGame.deck.getCard(theGame.sharedCards.cards[i]).friendlyRepresentation();
-                    }
-                    var pos2 = new THREE.Vector3();
-                    pos2.copy(pos);
-                    pos2.y += 50;
-                    var whichCardsMessage = new errorMessage({
-                        timeToDisappear: 8000,
-                        messageType: 3,
-                        message: cardMessage,
-                        pos: pos2,
-                        rot: handObj.quaternion
-                    });
-                }else{
-                    
-                    //forfeit, don't have to show cards!
-                    
-                    var message = "Player won by forfeit!";
-                    var winMessage = new errorMessage({
-                            timeToDisappear: 5000,
-                            messageType: 2,
-                            message: message,
-                            pos: pos,
+                        cardMessage += theGame.deck.getCard(thisPlayer.cards[1]).friendlyRepresentation();
+                        for(var i=0; i<theGame.sharedCards.cards.length; i++){
+                            cardMessage += ", ";
+                            cardMessage += theGame.deck.getCard(theGame.sharedCards.cards[i]).friendlyRepresentation();
+                        }
+                        var pos2 = new THREE.Vector3();
+                        pos2.copy(pos);
+                        pos2.y += 50;
+                        var whichCardsMessage = new errorMessage({
+                            timeToDisappear: 8000,
+                            messageType: 3,
+                            message: cardMessage,
+                            pos: pos2,
                             rot: handObj.quaternion
-                    });
-                    delete lastMessage;
-                    
-                }
+                        });
+                    }else{
+
+                        //forfeit, don't have to show cards!
+
+                        var message = "Player won by forfeit!";
+                        var winMessage = new errorMessage({
+                                timeToDisappear: 5000,
+                                messageType: 2,
+                                message: message,
+                                pos: pos,
+                                rot: handObj.quaternion
+                        });
+                        lastMessage = false;
+
+                    }
                 
                 theGame.resetCards();
 
@@ -376,7 +381,7 @@ function processUpdates(newUpdates){
         
     }
     
-        if(typeof lastMessage !== 'undefined'){
+        if(lastMessage !== false){
             var testMessage = new errorMessage(lastMessage);
         }
         
@@ -389,7 +394,7 @@ function processUpdates(newUpdates){
         //prevents the host from taking any actions until they've applied all the updates
         theGame.currentAuthority = authority;
     }
-    Array.prototype.push.apply(theGame.roundRecord, newUpdates);
+    //Array.prototype.push.apply(theGame.roundRecord, newUpdates);
     console.log("updates are now", theGame.roundRecord, newUpdates);
     
     var logstring = theGame.roundRecord.map(function(elem){return elem.title}).join('\n')

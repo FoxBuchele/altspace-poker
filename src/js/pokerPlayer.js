@@ -2,11 +2,15 @@ function player(whichPlayer){
   this.cards = [];
   this.spot = whichPlayer;
   this.state = -2;
-  this.prevState = -3;
+  this.prevState;
   this.updateFunction = this.renderVisuals;
+    
+  //TODO: Make sure these are synced
+    
   this.betThisRound = 0;  //how much player has put in the pot total this betting round
   this.currentBet = 0;  //how much the player wants to put in the pot right now
-    
+  this.totalBet = 0; //how much the player has put into the pot in total    
+
   //defined later
   this.userId = null;
   this.money = 0; 
@@ -150,7 +154,11 @@ player.prototype.renderVisuals = function(timeSince){
         toggleVisible(theGame.betCube, true);
             
         //make sure we have enough money
-        this.currentBet = theGame.currentBet - this.betThisRound;
+        if((theGame.currentBet - this.betThisRound) <= this.money){
+            this.currentBet = theGame.currentBet - this.betThisRound;
+        }else{
+            this.currentBet = this.money;
+        }
         this.bettingui.updateBet(this.currentBet);
             
             
@@ -188,11 +196,24 @@ player.prototype.chipColors = {
   "black": 100
 }
 
-player.prototype.win = function(amount){
-  theGame.bettingPot -= amount;
-  this.money+= amount;
-  makePot();
+player.prototype.win = function(){
+  //go backwards through the pots and if we've satisfied a pot, we should add it to this player's hand
+  //and remove it from the list of pots
+  var count = 0;
+  for(var i=theGame.bettingPots.length; i >= 0; i--){
+      count += theGame.bettingPots[i].amountToContribute;
+      if(this.totalBet >= count){
+          this.money += theGame.bettingPots[i].amount;
+          theGame.bettingPots.pop();
+      }else{
+          break;
+      }
+  }
+  //theGame.bettingPot -= amount;
+  //makePot();
+    
   this.renderChips();
+
 }
 
 /*
@@ -292,19 +313,53 @@ player.prototype.moveChipsTo = function(amount, where){
 player.prototype.bet = function(amount){
 
     //we may need to split the pot here
-  this.money -= amount;
-  theGame.bettingPot += amount;
+
+  //go through each player, find the person with the lowest money
+  //if their money is less than the current amount
+  //make the current betting pot the players minimum amount
+  //take the leftover, and make a new pot;
+    
   this.betThisRound += amount;
-  theGame.currentBet = this.betThisRound;
+  this.totalBet += amount;
+    
+  var lowestPlayer = -1;
+  for(var i=0; i<theGame.players.length; i++){
+      var player = theGame.players[i];
+      if(player.state > 0 && player.state < 4){
+          //in the round still
+          if(lowestPlayer === -1 && player.money < amount){
+             lowestPlayer = i;
+          }
+      }
+  }
+  //theGame.players[lowestPlayer] is the porest player, and has less money than this person is trying to bet;
+  
+  if(lowestPlayer !== -1){
+      var poorPlayer = theGame.players[lowestPlayer];
+      var diff = amount - poorPlayer.money;
+      theGame.bettingPots[0].amount += poorPlayer.money;
+      theGame.bettingPots[0].amountToContribute += poorPlayer.money;
+      theGame.newPot();
+      theGame.bettingPots[0].amount += diff;
+  }else{
+      
+      theGame.bettingPots[0].amount += amount;
+  }
+    
+    this.money -= amount;
+        
+   theGame.currentBet = this.betThisRound;
+  
+    
   //this.moveChipsTo(amount, theGame.potHolder);
-  this.renderChips();
+    this.renderChips();
     makePot();
     theGame.nextBet();
 }
 player.prototype.betBlind = function(amount, large){
     //we may need to split the pot here
     this.money -= amount;
-    theGame.bettingPot += amount;
+    theGame.bettingPots[0].amount += amount;
     this.betThisRound += amount;
     theGame.currentBet = this.betThisRound;
     //this.moveChipsTo(amount, theGame.potHolder);

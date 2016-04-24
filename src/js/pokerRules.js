@@ -418,6 +418,12 @@ function isStraight(cards){
 	return true;
 }
 
+function pot(){
+    this.amountToContribute = 0;
+    this.locked = false;
+    this.amount = 0;
+}
+
 
 function game(){
 	this.players = [];
@@ -427,7 +433,7 @@ function game(){
   this.better = 0;
   this.smallBlind = 5;
   this.bigBlind = 10;
-	this.deck = {};
+  this.deck = {};
   this.locked = false;
   this.step = -1;
   this.judge = mainRules;
@@ -438,8 +444,15 @@ function game(){
     cards:[]
   };
   this.currentBet = 0;
-  this.bettingPot = 0;
+  this.bettingPots = [new pot()];
   this.roundRecord = [];
+}
+
+game.prototype.newPot = function(){
+    this.bettingPots[0].locked = true;
+    //this.bettingPots.push(this.bettingPot);
+    var newpot = new pot();
+    this.bettingPots.unshift(newpot);
 }
 
 game.prototype.start = function(){
@@ -454,18 +467,16 @@ game.prototype.resetCards = function(){
                 for(var i=0; i<this.players.length; i++){
                     player = this.players[i];
                     for(var j=0; j<player.cards.length; j++){
-                        var geom = player.cards[j].geom;
+                        cardToDeck(player.cards[j]);
                         delete player.cards[j].geom;
-                        cardToDeck(geom);
                     }
                     player.cards = [];
                     toggleVisible(player.bettingui.mesh, false);
                 }
                 
-                for(var i=0; i<this.sharedCards.length; j++){
-                    var geom = this.sharedCards.geom;
-                    delete this.sharedCards.geom;
-                    cardToDeck(geom);
+                for(var i=0; i<this.sharedCards.cards.length; i++){
+                    cardToDeck(this.sharedCards.cards[i]);
+                    delete this.sharedCards.cards[i].geom;
                 }
                 this.sharedCards.cards = [];
     
