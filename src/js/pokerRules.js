@@ -763,6 +763,8 @@ var texasHoldEm = {
                     sendUpdate({winningPlayer: getSafePlayer(winningPlayer), hand: highestHand}, "playerWin", {thenUpdate: true});
                     //sendUpdate({toStep: 10}, "changeGameStep");
                     game.step = 10;
+                    game.resetCards();
+
                    // game.runClientStep();
                     game.runStep(); //kick out players without money, transfer control
                 

@@ -200,7 +200,7 @@ player.prototype.win = function(){
   //go backwards through the pots and if we've satisfied a pot, we should add it to this player's hand
   //and remove it from the list of pots
   var count = 0;
-  for(var i=theGame.bettingPots.length; i >= 0; i--){
+  for(var i=theGame.bettingPots.length - 1; i >= 0; i--){
       count += theGame.bettingPots[i].amountToContribute;
       if(this.totalBet >= count){
           this.money += theGame.bettingPots[i].amount;
