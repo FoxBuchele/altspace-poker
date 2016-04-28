@@ -252,8 +252,10 @@ ruleset.prototype.judge = function(cards){
 		value: -1,
 	};
 	for(var i=0; i<this.handRanking.length; i++){
-		if(this.handRanking[i].isHand(cards)){
+        var thesecards = this.handRanking[i].isHand(cards);
+		if(thesecards != false){
 			hand.name = this.handRanking[i].name;
+            hand.cards = thesecards;
 			hand.value = this.handRanking.length - i;
 			break;
 		}
@@ -278,25 +280,21 @@ mainRules.handRanking = [
 	{
 		name: "Full House",
 		isHand: function(cards){
-			var sortedCards = [];
-			for(var i=0; i<cards.length; i++){
-				if(typeof(sortedCards[cards[i].number]) == "undefined"){
-					sortedCards[cards[i].number] = 0;
-				}
-				sortedCards[cards[i].number]++;
-			}
-			
-			var findPair = false;
-			var findTrips = false;
-			
-			sortedCards.forEach(function(number){
-				if(parseInt(number) === 2){
-					findPair = true;
-				}else if(parseInt(number) === 3){
-					findTrips = true;
-				}
-			});
-			return findPair && findTrips;
+			var multiples = hasMultiples(cards, 3);
+            if(multiples.length !== 3){
+                return false;
+            }else{
+                var newCards = cards.slice();
+                newCards = newCards.filter(function(obj){
+                    return (multiples.indexOf(obj) !== -1)
+                });
+                var secondMultiples = hasMultiples(newCards, 2);
+                if(secondMultiples.length !== 2){
+                    return false;
+                }else{
+                    return multiples.concat(secondMultiples);
+                }
+            }
 		}
 	},		
 	{
@@ -321,23 +319,21 @@ mainRules.handRanking = [
 	{
 		name: "Two pair",
 		isHand: function(cards){
-			var sortedCards = [];
-			for(var i=0; i<cards.length; i++){
-				if(typeof(sortedCards[cards[i].number]) == "undefined"){
-					sortedCards[cards[i].number] = 0;
-				}
-				sortedCards[cards[i].number]++;
-			}
-			
-			var findThem = 0;
-			
-			sortedCards.forEach(function(number){
-				if(parseInt(number) === 2){
-					findThem++;
-					return;
-				}
-			});
-			return findThem === 2;
+			var multiples = hasMultiples(cards, 2);
+            if(multiples.length !== 2){
+                return false;
+            }else{
+                var newCards = cards.slice();
+                newCards = newCards.filter(function(obj){
+                    return obj.number !== multiples[0].number;
+                });
+                var secondMultiples = hasMultiples(newCards, 2);
+                if(secondMultiples.length !== 2){
+                    return false;
+                }else{
+                    return multiples.concat(secondMultiples);
+                }
+            }
 		}
 	},	
 	{
@@ -349,29 +345,41 @@ mainRules.handRanking = [
 	{
 		name: "High card",
 		isHand: function(cards){
-			return true;
+            var highCard = -1;
+            var card;
+            for(var i=0; i<cards.length; i++){
+                if(cards[i].number > highCard){
+                    highCard = cards[i].number;
+                    card = i;
+                }
+            }
+            return [cards[card]];
 		}
 	},	
 ]
 
 function hasMultiples(cards, numberOfMultiples){
 	if(numberOfMultiples <= 1){
-		return true;
+        console.log('need to check for more than one card!');
 	}
 	var sortedCards = [];
 	for(var i=0; i<cards.length; i++){
 		if(typeof(sortedCards[cards[i].number]) == "undefined"){
-			sortedCards[cards[i].number] = 0;
-		}
-		sortedCards[cards[i].number]++;
+			sortedCards[cards[i].number] = {
+                cards: [cards[i]],
+                num: 0
+            };
+		}else{
+            sortedCards[cards[i].number].cards.push(cards[i]);
+        }
+		sortedCards[cards[i].number].num++;
 	}
 	
 	var findThem = false;
 	
-	sortedCards.forEach(function(number){
-		if(parseInt(number) === parseInt(numberOfMultiples)){
-			findThem = true;
-			return;
+	sortedCards.forEach(function(obj){
+		if(parseInt(obj.num) === parseInt(numberOfMultiples)){
+			findThem = obj.cards;
 		}
 	})
 	
@@ -380,24 +388,29 @@ function hasMultiples(cards, numberOfMultiples){
 
 function isFlush(cards){
       if(cards.length < 5){
-				return false;
-			}
-			var suits = {};
-			for(var i=1; i<cards.length; i++){
-				if(typeof suits[cards[i].suit] === "undefined"){
-					suits[cards[i].suit] = 0;
-				}else{
-          suits[cards[i].suit]++;
+          return false;
+      }
+        var suits = {};
+        for(var i=0; i<cards.length; i++){
+            if(typeof suits[cards[i].suit] === "undefined"){
+                suits[cards[i].suit] = {
+                    cards: [cards[i]],
+                    num: 0
+                }
+            }else{
+                suits[cards[i].suit].cards.push(cards[i]);
+            }
+            suits[cards[i].suit].num++;
+            
         }
-			}
       var isFlush = false;
   
       for(var propertyName in suits) {
-        if(suits.hasOwnProperty(propertyName) && suits[propertyName]>=5){
-          isFlush = true;
+        if(suits.hasOwnProperty(propertyName) && suits[propertyName].num>=5){
+          isFlush = suits[propertyName].cards;
         }
       }
-			return isFlush;
+    return isFlush;
 }
 
 function isStraight(cards){
@@ -409,13 +422,26 @@ function isStraight(cards){
 			return card1.number > card2.number;
 		}
 	});
-	var offset = theseCards[0].number;
-	for(var i=offset; i<theseCards.length+offset; i++){
-		if(theseCards[i-offset].number != i){
-			return false;
-		}
-	}
-	return true;
+    
+    var foundStraight = false;
+    
+    var numTries = cards.length - 5;
+    //we have this many attempts to find a straight
+    
+    for(var i=0; i<numTries; i++){
+        for(var j=0; j<5; j++){
+            if(theseCards[i+j].number !== (theseCards[i+j].number+1)){
+                break;
+            }
+            if(j===4){
+                //if we've gotten this far, we're done!
+                return theseCards.slice(i, i+5);
+            }
+        }
+        
+    }
+    
+	return false;
 }
 
 function pot(){
@@ -470,7 +496,7 @@ game.prototype.resetCards = function(){
                         cardToDeck(player.cards[j]);
                         delete player.cards[j].geom;
                     }
-                    player.cards = [];
+                    //player.cards = [];
                     toggleVisible(player.bettingui.mesh, false);
                 }
                 
@@ -484,9 +510,12 @@ game.prototype.resetCards = function(){
 
 
 game.prototype.resetBetters = function(){
+    
+  //sets the betting order to a list of the players that should be given the option to bet this round
+    
   var bettingOrder = [];
   for(var i=0; i<this.dealingOrder.length; i++){
-    if(this.dealingOrder[i].state === 2){// > 0 && this.dealingOrder[i].state <= 3){    //they're still in the game, but waiting
+    if(this.dealingOrder[i].state === 2 && this.dealingOrder[i].money > 0){// > 0 && this.dealingOrder[i].state <= 3){    //they're still in the game, but waiting
       this.dealingOrder[i].betThisRound = 0;
       bettingOrder.push(i);
     }
@@ -633,7 +662,7 @@ var texasHoldEm = {
 				//deal 2 to players                
                 for(var i=0; i<game.players.length; i++){
                   if(game.players[i].state > -1 && game.players[i].cards.length === 0){
-                    game.deck.dealTo(game.players[i], 2);
+                    game.deck.dealTo(game.players[i], 5);
                     game.players[i].state = 1;    //player animates their own cards 
                     sendUpdate({index: i, player: getSafePlayer(game.players[i])}, "dealingCards");
                   }
@@ -760,10 +789,12 @@ var texasHoldEm = {
                       }
                     }
                     console.log(winningPlayer, "wins with", highestHand);
-                    sendUpdate({winningPlayer: getSafePlayer(winningPlayer), hand: highestHand}, "playerWin", {thenUpdate: true});
+                    //sendUpdate({winningPlayer: getSafePlayer(winningPlayer), hand: {name: highestHand.name, cards: getSafeCards(highestHand)}}, "playerWin", {thenUpdate: true});
+                
+                
                     //sendUpdate({toStep: 10}, "changeGameStep");
                     game.step = 10;
-                    game.resetCards();
+                    //game.resetCards();
 
                    // game.runClientStep();
                     game.runStep(); //kick out players without money, transfer control
@@ -797,13 +828,13 @@ var texasHoldEm = {
             
             var playerStates = [];
             for(var i=0; i<game.players.length; i++){
-                game.players[i].cards = [];
+               // game.players[i].cards = [];
                 playerStates.push(getSafePlayer(game.players[i]));
             }
             
             game.rotateDealers();
-          
-            sendUpdate({transferControl: game.dealingOrder[game.dealer].spot, endstatePlayers: playerStates}, "transferControl", {thenUpdate: true});
+            
+            //sendUpdate({transferControl: game.dealingOrder[game.dealer].spot, endstatePlayers: playerStates}, "transferControl", {thenUpdate: true});
           
     
         }

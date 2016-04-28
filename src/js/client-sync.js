@@ -178,6 +178,8 @@ function processUpdates(newUpdates){
                     }
                   }
                 theGame.resetDealers();
+                theGame.bettingPots = [];
+                theGame.bettingPots.push(new pot());
                 //theGame.step = 1;
                 theGame.dealer = data.dealer;
                 lastMessage = false;
@@ -278,12 +280,9 @@ function processUpdates(newUpdates){
                         });
                         delete lastMessage;
                         var cardMessage = "";
-                        cardMessage += theGame.deck.getCard(thisPlayer.cards[0]).friendlyRepresentation();
-                        cardMessage += ", ";
-                        cardMessage += theGame.deck.getCard(thisPlayer.cards[1]).friendlyRepresentation();
-                        for(var i=0; i<theGame.sharedCards.cards.length; i++){
+                        for(var i=0; i<data.hand.cards.length; i++){
                             cardMessage += ", ";
-                            cardMessage += theGame.deck.getCard(theGame.sharedCards.cards[i]).friendlyRepresentation();
+                            cardMessage += theGame.deck.getCard(data.hand.cards[i]).friendlyRepresentation();
                         }
                         var pos2 = new THREE.Vector3();
                         pos2.copy(pos);
@@ -337,7 +336,7 @@ function processUpdates(newUpdates){
                     
                     theGame.deck.shuffle();
                     authority = globalUserId;
-                    
+                    toggleVisible(theGame.players[data.transferControl].optionsui.mesh, true);
                     //create a new round record, send it to everyone
                     
                     //start level
@@ -354,7 +353,14 @@ function processUpdates(newUpdates){
                             }
 
                         }
-
+                        for(var i=0; i<theGame.players.length; i++){
+                            if(theGame.players[i].state === 0){    //they're  waiting
+                              theGame.players[i].state = 2;
+                            }
+                        }
+                        theGame.resetDealers();
+                        theGame.bettingPots = [];
+                        theGame.bettingPots.push(new pot());
                         sendUpdate({authority:globalUserId, deck: getSafeCards({cards: theGame.deck.shuffledDeck}), dealer: theGame.dealer},"startHand");
 
                         //push all these updates

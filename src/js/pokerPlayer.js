@@ -404,11 +404,12 @@ player.prototype.fold = function(){
         if(potentialPlayers.length === 1){
             sendUpdate({winningPlayer: getSafePlayer(potentialPlayers[0])}, "playerWin", {thenUpdate: true});
             
-            //TODO: add win, but no showing cards code
             
-            sendUpdate({toStep: 10}, "changeGameStep");
+            theGame.resetCards();
+            
+            //sendUpdate({toStep: 10}, "changeGameStep");
             theGame.step = 10;
-            theGame.runClientStep();
+           // theGame.runClientStep();
             theGame.runStep(); 
 
         }else{
