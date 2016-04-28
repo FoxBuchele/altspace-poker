@@ -17,6 +17,7 @@ function player(whichPlayer){
   this.hand = {};
   this.chipStack = {};
   this.joinButton;
+  this.name = "Unknown";
 }
 
 player.prototype.myCardsFriendly = function(){

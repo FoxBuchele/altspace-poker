@@ -571,21 +571,7 @@ function updatePlayers(time){
 
 function main(){
     
-    /*var testMessage = new errorMessage({
-        timeToDisappear: 3000,
-        messageType: 1,
-        message: "Player joined!",
-        pos: new THREE.Vector3(0, 0, 0),
-        rot: new THREE.Vector3()
-    });*/
-    
-    
-    
-    //var thisCard = theGame.deck.getCard({number:3, suit:"hearts"}, false, true); 
-    //thisCard.geom.position.y += 100;
-    
 	theGame.logic = texasHoldEm;
-	//theGame.players[0] = new player(0);
     theGame.giveCard = giveCard;
     
     //render first set of visuals

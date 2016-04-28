@@ -125,6 +125,7 @@ function processUpdates(newUpdates){
                 theGame.players[data.registerIndex].state = 0;
                 theGame.players[data.registerIndex].renderVisuals(0);
                 theGame.players[data.registerIndex].money = data.money;
+                theGame.players[data.registerIndex].name = data.name;
                
                 /*var forwardDirection = new THREE.Vector3(0, 0, 1);
                 var matrix = new THREE.Matrix4();
@@ -142,7 +143,7 @@ function processUpdates(newUpdates){
                 lastMessage = {
                     timeToDisappear: 2000,
                     messageType: 1,
-                    message: "Player joined!",
+                    message: data.name+" joined!",
                     pos: pos,
                     rot: handObj.quaternion
                 };
@@ -199,6 +200,7 @@ function processUpdates(newUpdates){
             case "playerBet":
                 
                 theGame.players[data.i].bet(data.amount);
+                var name = theGame.players[data.i].name;
                 
                 var handObj = theGame.players[data.i].hand
                 var pos = new THREE.Vector3();
@@ -210,11 +212,11 @@ function processUpdates(newUpdates){
                 pos.add(forwardDirection);
                 var message;
                 if(data.amount === 0){
-                    message = "Player checked!";
+                    message = name+" checked!";
                 }else if(theGame.players[data.i].money === 0){
-                    message = "Player went all-in with $"+data.amount+"!";
+                    message = name+" went all-in with $"+data.amount+"!";
                 }else{
-                    message = "Player bet $"+data.amount+"!";
+                    message = name+" bet $"+data.amount+"!";
                 }
                 lastMessage = {
                         timeToDisappear: 3000,
@@ -227,6 +229,7 @@ function processUpdates(newUpdates){
             case "playerFold":
                 
                 theGame.players[data.i].fold();
+                var name = theGame.players[data.i].name;
                 
                 var handObj = theGame.players[data.i].hand
                 var pos = new THREE.Vector3();
@@ -236,7 +239,7 @@ function processUpdates(newUpdates){
                 forwardDirection.copy(handObj.userData.forward);
                 forwardDirection.multiplyScalar(-100);
                 pos.add(forwardDirection);
-                var message = "Player folded...";
+                var message = name+" folded...";
                 lastMessage = {
                         timeToDisappear: 3000,
                         messageType: 0,
@@ -248,10 +251,23 @@ function processUpdates(newUpdates){
                 break;
             case "playerWin":
                 
-                    var thisPlayer = theGame.players[data.winningPlayer.spot];
+                
+                    var highestHands = data.hands;
+                    
+                     var handOrder = Object.keys(highestHands).map(function(val){return parseInt(val)});
+                    handOrder.sort(function(a, b){ //sorting in reverse order
+                        return b-a;
+                    });
+                    
+                    console.log(highestHands[handOrder[0]].players, "wins with", highestHands[handOrder[0]].hand);
+                    
+                    
+                    
+                    /*
+                    //var thisPlayer = theGame.players[data.winningPlayer.spot];
 
                     //rewrite this so the player can only win the pots they fulfilled
-                    thisPlayer.win();
+                    //thisPlayer.win();
 
 
                     toggleVisible(theGame.winCube, false);
@@ -312,7 +328,7 @@ function processUpdates(newUpdates){
                 
                 theGame.resetCards();
 
-                
+                */
                 
                 break;
             case "dealSharedCards":

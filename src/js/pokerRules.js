@@ -252,29 +252,72 @@ ruleset.prototype.judge = function(cards){
 		value: -1,
 	};
 	for(var i=0; i<this.handRanking.length; i++){
+        
+        //should sort cards here
+        
         var thesecards = this.handRanking[i].isHand(cards);
 		if(thesecards != false){
 			hand.name = this.handRanking[i].name;
-            hand.cards = thesecards;
+            hand.cards = thesecards.cards;
 			hand.value = this.handRanking.length - i;
+            hand.subValue = thesecards.subVal;  //when comparing hands to see who has the higher pair (for instance), use this value, if value is the same the players tie
+            console.log(hand);
 			break;
 		}
 	}
 	return hand;
 }
 
+function sameCards(setOne, setTwo){
+    //assuming the cards are in the correct order
+    if(setOne.length !== setTwo.length || setOne.length === 0 || !setOne.length){
+        return false;
+    }
+    
+    for(var i=0; i<setOne.length; i++){
+        if(setOne[i].number !== setTwo[i].number || setOne[i].suit !== setTwo[i].suit){
+            return false;
+        }
+    }
+    return true;
+    
+}
+
+function maxCardVal(cards){
+     return Math.max.apply(null, cards.map(function(val){return val.number}));
+}
+
+
 var mainRules = new ruleset();
 mainRules.handRanking = [
 	{
 		name: "Straight Flush",
 		isHand: function(cards){
-			return isStraight(cards) && isFlush(cards);
+            
+            var straightCards = isStraight(cards);
+            var flushCards = isFlush(cards);
+			if(straightCards !== false && flushCards !== false && sameCards(straightCards, flushCards)){
+                return {
+                    cards: straightCards.concat(flushCards),
+                    subVal:  maxCardVal(straightCards)
+                }
+            }else{
+                return false;
+            }
 		}
 	},
 	{
 		name: "Four of a kind",
 		isHand: function(cards){
-			return hasMultiples(cards, 4);
+			var multiples = hasMultiples(cards, 4);
+            if(multiples === false){
+                return false;
+            }
+            
+            return {
+                cards: multiples,
+                subVal: multiples[0].number
+            }
 		}
 	},
 	{
@@ -292,7 +335,10 @@ mainRules.handRanking = [
                 if(secondMultiples.length !== 2){
                     return false;
                 }else{
-                    return multiples.concat(secondMultiples);
+                    return {
+                        cards: multiples.concat(secondMultiples),
+                        subVal: Math.max(parseInt(multiples[0].number), parseInt(secondMultiples[0].number))
+                    }
                 }
             }
 		}
@@ -300,20 +346,42 @@ mainRules.handRanking = [
 	{
 		name: "Flush",
 		isHand: function(cards){
-			return isFlush(cards);
-			
+			var flushCards = isFlush(cards);
+            if(flushCards === false){
+                return false
+            }
+            
+            return {
+                cards: flushCards,
+                subVal: maxCardVal(flushCards)
+            }
 		}
 	},		
 	{
 		name: "Straight",
 		isHand: function(cards){
-			return isStraight(cards);
+			var straightCards = isStraight(cards);
+            if(straightCards === false){
+                return false;
+            }else{
+                return{
+                    cards:straightCards,
+                    subVal: maxCardVal(straightCards)
+                }
+            }
 		}
 	},		
 	{
 		name: "Three of a kind",
 		isHand: function(cards){
-			return hasMultiples(cards, 3);
+            var threeCards = hasMultiples(cards, 3);
+			if(threeCards === false){
+                return false;
+            }
+            return {
+                cards: threeCards,
+                subVal: threeCards[0].number
+            }
 		}
 	},	
 	{
@@ -331,7 +399,11 @@ mainRules.handRanking = [
                 if(secondMultiples.length !== 2){
                     return false;
                 }else{
-                    return multiples.concat(secondMultiples);
+                    var retMultiples = multiples.concat(secondMultiples);
+                    return {
+                        cards: retMultiples,
+                        subVal: maxCardVal(retMultiples)
+                    }
                 }
             }
 		}
@@ -339,21 +411,33 @@ mainRules.handRanking = [
 	{
 		name: "One pair",
 		isHand: function(cards){
-			return hasMultiples(cards, 2);
+			var pairCards = hasMultiples(cards, 2);
+            if(pairCards === false){
+                return false;
+            }
+                
+            return {
+                cards: pairCards,
+                subVal: pairCards[0].number
+            }
+            
 		}
 	},	
 	{
 		name: "High card",
 		isHand: function(cards){
             var highCard = -1;
-            var card;
+            var cardIndex;
             for(var i=0; i<cards.length; i++){
                 if(cards[i].number > highCard){
                     highCard = cards[i].number;
-                    card = i;
+                    cardIndex = i;
                 }
             }
-            return [cards[card]];
+            return {
+                cards: [cards[cardIndex]],
+                subVal: cards[cardIndex].number
+            }
 		}
 	},	
 ]
@@ -662,7 +746,7 @@ var texasHoldEm = {
 				//deal 2 to players                
                 for(var i=0; i<game.players.length; i++){
                   if(game.players[i].state > -1 && game.players[i].cards.length === 0){
-                    game.deck.dealTo(game.players[i], 5);
+                    game.deck.dealTo(game.players[i], 2);
                     game.players[i].state = 1;    //player animates their own cards 
                     sendUpdate({index: i, player: getSafePlayer(game.players[i])}, "dealingCards");
                   }
@@ -777,20 +861,73 @@ var texasHoldEm = {
             },
 			exec: function(game){
         
-                    var highestHand = {value:-2};
+                    var highestHand = [];
                     var winningPlayer;
                 
                     game.resetBetters();
-                
+                    console.log("betters are", game.bettingOrder);
+                    
+                    var winnerOrder = [];
+                    
                     for(var i=0; i<game.bettingOrder.length; i++){
-                      if(game.judge.judge(game.dealingOrder[game.bettingOrder[i]].cards).value > highestHand.value){
-                        highestHand = game.judge.judge(game.dealingOrder[game.bettingOrder[i]].cards);
-                        winningPlayer = game.dealingOrder[game.bettingOrder[i]];
-                      }
+                      var judgeValue = game.judge.judge(game.dealingOrder[game.bettingOrder[i]].cards.concat(game.sharedCards.cards))
+                      judgeValue.cards = getSafeCards(judgeValue);
+                      if(typeof highestHand[judgeValue.value] === "undefined"){
+                            var writeObj = {
+                                hand: {},
+                                players: []
+                            };
+                            writeObj.hand = judgeValue;
+                            writeObj.players.push(getSafePlayer(game.dealingOrder[game.bettingOrder[i]]));
+                            highestHand[judgeValue.value] = writeObj;
+                       }else{
+                           
+                           //see if it's actually a tie, or if someone else has a better version
+                           
+                           if(highestHand[judgeValue.value].hand.subValue === judgeValue.subValue){
+                               //this new hand ties
+                               highestHand[judgeValue.value].players.push(getSafePlayer(game.dealingOrder[game.bettingOrder[i]]));
+                           }else if(parseInt(highestHand[judgeValue.value].hand.subValue) < parseInt(judgeValue.subValue)){
+                               //this new hand wins
+                                var writeObj = {
+                                    hand: {},
+                                    players: []
+                                };
+                                writeObj.hand = judgeValue;
+                                writeObj.players.push(getSafePlayer(game.dealingOrder[game.bettingOrder[i]]));
+                                highestHand[judgeValue.value] = writeObj;
+                           }else{
+                               console.log("Close loss!", highestHand[judgeValue.value].hand, judgeValue);
+                           }                   
+                           
+                       }
+
                     }
-                    console.log(winningPlayer, "wins with", highestHand);
-                    //sendUpdate({winningPlayer: getSafePlayer(winningPlayer), hand: {name: highestHand.name, cards: getSafeCards(highestHand)}}, "playerWin", {thenUpdate: true});
+                    
+                    //we want to sort numerically, highest rated hand won
                 
+                    sendUpdate({hands: highestHand}, "playerWin", {thenUpdate: true});
+                    
+                    var handOrder = Object.keys(highestHand).map(function(val){return parseInt(val)});
+                    handOrder.sort(function(a, b){ //sorting in reverse order
+                        return b-a;
+                    });
+                    
+                    console.log(highestHand[handOrder[0]].players, "wins with", highestHand[handOrder[0]].hand);
+                
+                    for(var i=0; i<handOrder.length; i++){
+                        //start at the highest hand and award money
+                        if(theGame.bettingPots.length === 0){
+                            console.log("Done awarding money!");
+                            break;
+                        }
+                        var winningPlayers = highestHand[handOrder[i]].players;
+                        if(winningPlayers.length === 1){
+                            awardMoney(winningPlayers);
+                        }else{
+                            console.log('need to split the money!')
+                        }
+                    }
                 
                     //sendUpdate({toStep: 10}, "changeGameStep");
                     game.step = 10;
@@ -842,6 +979,10 @@ var texasHoldEm = {
 	]
 }
 
+
+function awardMoney(playerList){
+    //this is a list of players we need to give money in the betting pot to
+}
 
 function toggleVisible(object, visible){
       object.visible = visible;
