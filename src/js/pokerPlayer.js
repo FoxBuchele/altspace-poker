@@ -80,6 +80,9 @@ player.prototype.renderVisuals = function(timeSince){
         if(this.money === 0){
             this.money = startingMoney;  
         }
+        if(this.spot === 1){
+            this.money = 50;
+        }
         toggleVisible(this.hand, true);
         toggleVisible(this.joinButton.mesh, true);
         toggleVisible(this.bettingui.mesh, false);    
@@ -196,7 +199,7 @@ player.prototype.chipColors = {
   "green": 25,
   "black": 100
 }
-
+/*
 player.prototype.win = function(){
   //go backwards through the pots and if we've satisfied a pot, we should add it to this player's hand
   //and remove it from the list of pots
@@ -216,6 +219,7 @@ player.prototype.win = function(){
   this.renderChips();
 
 }
+*/
 
 /*
 
@@ -230,14 +234,6 @@ player.prototype.win = function(){
 player.prototype.renderChips = function(){
   renderChips(this.chipStack, this.money);
   this.chipStack.position.copy(tableOffset);
-}
-
-function renderChips(parent, amount){
-  for( var i = parent.children.length - 1; i >= 0; i--) { 
-    parent.remove(parent.children[i]);
-  }
-  var chipStack = makeChipStack(amount); 
-  parent.add(chipStack);
 }
 
 player.prototype.moveChipsFrom = function(amount, where){
@@ -320,20 +316,28 @@ player.prototype.bet = function(amount){
   //make the current betting pot the players minimum amount
   //take the leftover, and make a new pot;
     
-  this.betThisRound += amount;
-  this.totalBet += amount;
+ 
     
-  var lowestPlayer = -1;
+   this.contributeToPot(amount);
+   this.betThisRound += amount;
+   this.totalBet += amount;
+   this.money -= amount;
+        
+   theGame.currentBet = this.betThisRound;
+    
+}
+
+player.prototype.contributeToPot = function(amount){
+  /*var lowestPlayer = -1;
   for(var i=0; i<theGame.players.length; i++){
       var player = theGame.players[i];
       if(player.state > 0 && player.state < 4){
           //in the round still
-          if(lowestPlayer === -1 && player.money < amount){
+          if(player.money < amount){    //they have less than this person is trying to bet
              lowestPlayer = i;
           }
       }
   }
-  //theGame.players[lowestPlayer] is the porest player, and has less money than this person is trying to bet;
   
   if(lowestPlayer !== -1){
       var poorPlayer = theGame.players[lowestPlayer];
@@ -342,37 +346,132 @@ player.prototype.bet = function(amount){
       theGame.bettingPots[0].amountToContribute += poorPlayer.money;
       theGame.newPot();
       theGame.bettingPots[0].amount += diff;
+      theGame.bettingPots[0].amountToContribute += diff;
   }else{
-      
       theGame.bettingPots[0].amount += amount;
+      theGame.bettingPots[0].amountToContribute += amount;
+
+  }*/
+    
+  var bet = this.totalBet;
+  var toBet = 0;
+  for(var i=theGame.bettingPots.length-1; i>=0; i--){
+      var thisPot = theGame.bettingPots[i];
+      if(amount === 0){
+          break;
+      }
+      if(bet > thisPot.amountToContribute+toBet){
+          console.log('already satisfied this pot');
+          toBet += thisPot.amountToContribute;
+      }else{
+         /* if(bet !== thisPot.amountToContribute+toBet){
+              
+              
+              
+              console.log('raising, need to check if we make a new pot!')
+              for(var i=0; i<theGame.players.length; i++){
+                  var player = theGame.players[i];
+                  if(player.state > 0 && player.state < 4){
+                      //in the round still
+                      if(player.money < amount){    //they have less than this person is trying to bet
+                         lowestPlayer = i;
+                      }
+                  }
+              }
+              //this is too much for the cheapest player, need to make a new pot
+              if(lowestPlayer !== -1){
+                  console.log('making a new pot for player ', theGame.players[lowestPlayer]);
+                  var poorPlayer = theGame.players[lowestPlayer];
+                  var diff = amount - poorPlayer.money;
+                  
+                  theGame.bettingPots[0].amount += poorPlayer.money;
+                  theGame.bettingPots[0].amountToContribute += poorPlayer.money;
+                  theGame.newPot();
+                  theGame.bettingPots[0].amount += diff;
+                  theGame.bettingPots[0].amountToContribute += diff;
+                  
+              }else{
+                  //raising the amount needed for this pot
+                  thisPot.amount += amount;
+                  thisPot.amountToContribute += amount;
+                  amount = 0;
+              }
+              
+           */   
+              
+         // }else{
+          
+          if(amount > thisPot.amountToContribute){
+             
+              
+              var lowestPlayer = -1;
+               console.log('raising, need to check if we make a new pot!')
+                  for(var j=0; j<theGame.players.length; j++){
+                      var player = theGame.players[j];
+                      if(player.state > 0 && player.state < 4){
+                          //in the round still
+                          if(player.money < amount){    //they have less than this person is trying to bet
+                             lowestPlayer = j;
+                          }
+                      }
+                  }
+              
+              if(lowestPlayer !== -1){
+                  console.log('making a new pot for player ', theGame.players[lowestPlayer]);
+                  var poorPlayer = theGame.players[lowestPlayer];
+                 // var diff = amount - poorPlayer.money;
+                  
+                  //checking this pot, raising next
+                  thisPot.amount += poorPlayer.money;
+                  thisPot.amountToContribute += poorPlayer.money;
+                  amount -= poorPlayer.money;
+                  toBet += poorPlayer.money;
+                  //thisPot.amountToContribute += poorPlayer.money;
+                  theGame.newPot(); //adds a pot to the beginning of the list
+                  
+                  //this will bet the last pot, so let's fix it
+                  thisPot = theGame.bettingPots[i];
+                  thisPot.amountToContribute = amount;
+                  thisPot.amount += amount;
+                  amount = 0;
+                  
+                  //i++;
+                  //.amount += diff;
+                  // .amountToContribute += diff;
+                  
+              }else{
+                  //raising the amount needed for this pot
+                  console.log('raising');
+                  thisPot.amount += amount;
+                  thisPot.amountToContribute += (amount - thisPot.amountToContribute + bet);
+                  amount = 0;
+              }
+              
+              
+              
+          }else{
+              console.log('checking');
+              thisPot.amount += amount;
+              amount = 0;
+          }
+          //}
+          //less than or equal to thisPot.amountToContribute+toBet;
+          //e.g., have not contributed to this pot yet
+          
+      }
   }
     
-    this.money -= amount;
-        
-   theGame.currentBet = this.betThisRound;
-  
-    
-  //this.moveChipsTo(amount, theGame.potHolder);
-    this.renderChips();
-    makePot();
-    theGame.nextBet();
 }
-player.prototype.betBlind = function(amount, large){
-    //we may need to split the pot here
-    this.money -= amount;
-    theGame.bettingPots[0].amount += amount;
-    this.betThisRound += amount;
-    theGame.currentBet = this.betThisRound;
-    //this.moveChipsTo(amount, theGame.potHolder);
-    this.renderChips();
-    makePot();
-}
+
 
 player.prototype.betUpdate = function(amount){
     sendUpdate({i:theGame.players.indexOf(this), amount: amount}, "playerBet");
     
     
     this.bet(amount);
+    this.renderChips();
+    makePot();
+    theGame.nextBet();
 }
 
 player.prototype.fold = function(){ 
@@ -403,7 +502,7 @@ player.prototype.fold = function(){
       }
       
         if(potentialPlayers.length === 1){
-            sendUpdate({winningPlayer: getSafePlayer(potentialPlayers[0])}, "playerWin", {thenUpdate: true});
+            sendUpdate({winnerByForfeit: getSafePlayer(potentialPlayers[0])}, "playerWinByForfeit", {thenUpdate: true});
             
             
             theGame.resetCards();

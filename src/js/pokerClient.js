@@ -31,7 +31,7 @@ var tableOffset = new THREE.Vector3(0, -150, 0)
 
 var potPosition = new THREE.Vector3();
 //potPosition.copy(tableOffset);
-potPosition.set(175, tableOffset.y - 18.5, 0);
+potPosition.set(115, tableOffset.y - 18.5, 0);
 
 var cardTemplate = {
   width: 25,
@@ -351,13 +351,33 @@ function toggleCardsBehavior(pl){
 
 function makePot(){
   //make a chipstack of theChips, at thePotHolder
-  var amount = 0;
+  
   for(var i=0; i<theGame.bettingPots.length; i++){
-      amount += theGame.bettingPots[i].amount;
+      var offset = new THREE.Vector3(0, 0, i*-15);      
+      //amount += theGame.bettingPots[i].amount;
+      console.log(offset);
+      _renderChips(theGame.potHolder, theGame.bettingPots[i].amount, offset);
   }
-  renderChips(theGame.potHolder, amount);
+  
 }
 
+function renderChips(parent, amount, offset){
+  for( var i = parent.children.length - 1; i >= 0; i--) { 
+    parent.remove(parent.children[i]);
+  }
+
+    _renderChips(parent, amount, offset);
+}
+
+function _renderChips(parent, amount, offset){
+    
+    var chipStack = makeChipStack(amount);
+      if(typeof offset !== 'undefined'){
+        chipStack.position.add(offset);
+      }
+      parent.add(chipStack);
+    
+}
 
 
 
@@ -622,8 +642,6 @@ function main(){
     toggleVisible(theGame.betCube, false);
     toggleVisible(theGame.winCube, false);
     theGame.cardsToDeck = cardsToDeck;
-    var potHolder = createPotHolder();
-    potHolder.position.copy(potPosition);
     
     theGame.potHolder = new THREE.Object3D();
     theGame.potHolder.name = "potholder";
@@ -632,7 +650,6 @@ function main(){
     theGame.potHolder.position.y+= 5;
     theGame.potHolder.position.x-= 75;
     sim.scene.add(theGame.potHolder);
-    sim.scene.add(potHolder); 
     sim.scene.add(theGame.winCube); 
     sim.scene.add(theGame.betCube);
   

@@ -200,6 +200,9 @@ function processUpdates(newUpdates){
             case "playerBet":
                 
                 theGame.players[data.i].bet(data.amount);
+                theGame.players[data.i].renderChips();
+                makePot();
+                theGame.nextBet();
                 var name = theGame.players[data.i].name;
                 
                 var handObj = theGame.players[data.i].hand
@@ -247,6 +250,38 @@ function processUpdates(newUpdates){
                         pos: pos,
                         rot: handObj.quaternion
                     };
+                
+                break;
+            case "playerWinByForfeit":
+                    
+                var thisPlayer = theGame.players[data.winnerByForfeit.spot];
+                
+                    toggleVisible(theGame.winCube, false);
+                    toggleVisible(theGame.betCube, false);
+
+                    var handObj = thisPlayer.hand;
+                        var pos = new THREE.Vector3();
+                        pos.copy(handObj.position);
+
+                    var forwardDirection = new THREE.Vector3();
+                        forwardDirection.copy(handObj.userData.forward);
+                        forwardDirection.multiplyScalar(-100);
+                        pos.add(forwardDirection);
+                        pos.y += 25;
+                
+                var message = "Player won by forfeit!";
+                        var winMessage = new errorMessage({
+                                timeToDisappear: 5000,
+                                messageType: 2,
+                                message: message,
+                                pos: pos,
+                                rot: handObj.quaternion
+                        });
+                        lastMessage = false;
+                    
+                    awardMoney([thisPlayer]);
+                    
+                    theGame.resetCards();
                 
                 break;
             case "playerWin":

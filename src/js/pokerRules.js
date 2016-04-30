@@ -706,10 +706,13 @@ var betStep = function(game){
         game.better = 0;
         game.currentBet = 0;
         if(game.step === 2){
-            game.dealingOrder[game.bettingOrder[game.better]].betBlind(game.smallBlind, false);
+            game.dealingOrder[game.bettingOrder[game.better]].bet(game.smallBlind);
+            game.dealingOrder[game.bettingOrder[game.better]].renderChips();
             game.nextBet();
-            game.dealingOrder[game.bettingOrder[game.better]].betBlind(game.bigBlind, false);
+            game.dealingOrder[game.bettingOrder[game.better]].bet(game.bigBlind);
+            game.dealingOrder[game.bettingOrder[game.better]].renderChips();
             game.nextBet();
+            makePot();
         }else{
             game.dealingOrder[game.bettingOrder[game.better]].state = 3;
         }
@@ -922,11 +925,8 @@ var texasHoldEm = {
                             break;
                         }
                         var winningPlayers = highestHand[handOrder[i]].players;
-                        if(winningPlayers.length === 1){
-                            awardMoney(winningPlayers);
-                        }else{
-                            console.log('need to split the money!')
-                        }
+                        awardMoney(winningPlayers);
+                        
                     }
                 
                     //sendUpdate({toStep: 10}, "changeGameStep");
@@ -982,6 +982,14 @@ var texasHoldEm = {
 
 function awardMoney(playerList){
     //this is a list of players we need to give money in the betting pot to
+    
+    //first lets handle the case of a single player, how much did they win
+    
+    var player = playerList[0];
+    var threshold = player.totalBet;
+    
+    
+    
 }
 
 function toggleVisible(object, visible){
