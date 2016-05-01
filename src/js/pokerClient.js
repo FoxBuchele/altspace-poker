@@ -132,7 +132,9 @@ function ready(firstInstance) {
     console.log(firstInstance);
     
     if(firstInstance){ 
-
+        
+        cutoffTime = Date.now();
+        
         theGame.deck.shuffle(); 
         
         theGame.roundRecord = [{title: "startedLevel", timestamp: Date.now()}]
@@ -476,6 +478,11 @@ function giveCard(cards, toObj, i){
             
             var thisCard = cards[i];
              
+            
+            //thisCard = theGame.deck.getCard(thisCard);
+            //cards[i] = thisCard;
+                 
+    
             thisCard.movementTween.rotation.copy(thisCard.geom.rotation); 
             thisCard.movementTween.position.copy(thisCard.geom.position);
   
@@ -529,28 +536,22 @@ function giveCard(cards, toObj, i){
                }
             }(thisCard)));
            
-          
-  
-            toRotationTween.chain(toPlayerTween);
-            toPlayerTween.chain(toHandTween);
-            toRotationTween.start(); 
-}
-
-function toggleCard(thisCard, toggle){
     
-    var height = {y:-110};
-    var rotation = {x:-Math.PI/8};
-    if(!toggle){
-      rotation.x = Math.PI/2;
-      height.y = tableOffset.y; 
-    }
+            var height = {y: -110};
+            var rotation = {x:-Math.PI/8};
+            //if(!toggle){
+               // rotation.x = Math.PI/2;
+               // height.y = tableOffset.y; 
+           // }
   
             var changeHeightTween = new TWEEN.Tween(thisCard.movementTween.position).to(height, 1000);  
             changeHeightTween.onUpdate((function(card){
               return function(value1){
                 //now that cards are in the correct position, raise them so we can see the cards
                 if(typeof card.geom !== 'undefined'){
-                    card.geom.position.y = card.movementTween.position.y;
+                    card.geom.position.copy(card.movementTween.position);
+                }else{
+                    console.log('no geom!');
                 }
               }
             }(thisCard))); 
@@ -566,10 +567,12 @@ function toggleCard(thisCard, toggle){
                   }
               }
             }(thisCard)));
-  
-  
-      changeHeightTween.start();
-      makeVisibleTween.start();
+
+          
+            
+            toRotationTween.chain(toPlayerTween);
+            toPlayerTween.chain(toHandTween, makeVisibleTween, changeHeightTween);
+            toRotationTween.start(); 
 }
 
 
@@ -592,8 +595,7 @@ function updatePlayers(time){
 function main(){
     
 	theGame.logic = texasHoldEm;
-    theGame.giveCard = giveCard;
-    
+    checkForDoneBetting();
     //render first set of visuals
     updatePlayers(0);
     
@@ -682,37 +684,41 @@ function cardsToDeck(){
 
 function cardToDeck(card){
     var movementTween = card.movementTween;
-    var geom = card.geom;
-    movementTween.position.copy(geom.position); 
-    movementTween.rotation.copy(geom.rotation);
-    var toTable = new TWEEN.Tween(movementTween.position).to({y:tableOffset.y}, 200);
-            var posToDeck = new TWEEN.Tween(movementTween.position).to(tableOffset, 1000);
-            posToDeck.onUpdate((function(geom, movementTween){
-              return function(t){
-                  geom.position.copy(movementTween.position);
-              } 
-            }(geom, movementTween)));
-            posToDeck.onComplete((function(geom){
-              return function(t){
-                  if(geom.parent.type === "Object3D"){ 
-                    THREE.SceneUtils.detach(geom, geom.parent, sim.scene);
-                    geom.updateMatrixWorld();
-                  }
-                  geom.parent.remove(geom); 
-              } 
-            }(geom)));
-            var rotToDeck = new TWEEN.Tween(movementTween.rotation).to({x:Math.PI/2, y:0, z:0}, 200);
-            rotToDeck.onUpdate((function(geom, movementTween){
-              return function(t){
-                  if(typeof geom !== 'undefined'){
-                    geom.rotation.setFromVector3(card.movementTween.rotation);
-                  }
-              } 
-            }(geom, movementTween)));
-    toTable.chain(posToDeck);
-    toTable.start();
-    //posToDeck.start();
-    rotToDeck.start(); 
+    if(typeof card.geom !== 'undefined'){
+        var geom = card.geom;
+        delete card.geom;
+        movementTween.position.copy(geom.position); 
+        movementTween.rotation.copy(geom.rotation);
+                var toTable = new TWEEN.Tween(movementTween.position).to({y:tableOffset.y}, 200);
+                var posToDeck = new TWEEN.Tween(movementTween.position).to(tableOffset, 1000);
+                posToDeck.onUpdate((function(geom, movementTween){
+                  return function(t){
+                      geom.position.copy(movementTween.position);
+                  } 
+                }(geom, movementTween)));
+                posToDeck.onComplete((function(geom){
+                  return function(t){
+                      if(geom.parent.type === "Object3D"){ 
+                        THREE.SceneUtils.detach(geom, geom.parent, sim.scene);
+                        geom.updateMatrixWorld();
+                      }
+                      geom.parent.remove(geom); 
+                  } 
+                }(geom)));
+                var rotToDeck = new TWEEN.Tween(movementTween.rotation).to({x:Math.PI/2, y:0, z:0}, 500);
+                rotToDeck.onUpdate((function(geom, movementTween){
+                  return function(t){
+                      if(typeof geom !== 'undefined'){
+                        geom.rotation.setFromVector3(movementTween.rotation);
+                      }
+                  } 
+                }(geom, movementTween)));
+        toTable.chain(posToDeck);
+        toTable.start();
+        rotToDeck.start(); 
+    }else{
+        //debugger;
+    }
 }
 
 

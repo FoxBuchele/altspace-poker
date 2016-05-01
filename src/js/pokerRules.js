@@ -18,7 +18,7 @@ function card(number, suit){
 }
 
 card.prototype.friendlyRepresentation = function(){
-    return suitSymbols[suitArray.indexOf(this.suit)] + " " + this.friendlynumber();
+    return suitSymbols[suitArray.indexOf(this.suit)] + " " + numArray[this.number];
 }
 
 card.prototype.friendlynumber = function(){
@@ -151,9 +151,6 @@ deck.prototype.getCard = function(theCard, large, visible){
   
   if(!visible){
       
-      sim.scene.remove(thisCard.geom);
-      delete thisCard.Geom;
-      
       thisCard.geom = createHiddenCardGeom();
       
       thisCard.geom.position.set(0, tableOffset.y - cardTemplate.height/2 + 10, 0);
@@ -162,14 +159,10 @@ deck.prototype.getCard = function(theCard, large, visible){
       
   }else{
     
-      if(typeof thisCard.geom === 'undefined' || thisCard.geom.userData.large !== large || thisCard.geom.userData.hidden){
-
-        sim.scene.remove(thisCard.geom);
-        delete thisCard.geom;
-
-        createCardGeom(thisCard, large);
-        thisCard.geom.userData.large = large;
-      }
+      
+      createCardGeom(thisCard, large, true);
+      thisCard.geom.userData.large = large;
+      
       if(large){
         thisCard.geom.scale.set(1.5, 1.5, 1.5);
         thisCard.geom.position.set(i*0.1, thisCard.geom.position.y, i*0.1);
@@ -196,21 +189,19 @@ function createHiddenCardGeom(){
 function createCardGeom(theCard, doubleSided, visible){
    doubleSided = doubleSided || false;
    if(typeof theCard.geom !== "undefined"){
-     theCard.geom.parent.remove(theCard.geom);
-     delete theCard.geom;
+     //theCard.geom.parent.remove(theCard.geom);
+    //delete theCard.geom;
+       return theCard.geom;
    }
 
-    console.log('cloning the card models');
-    
-    //var geometry =     
-    
+    console.log('cloning the card models');    
     
     
     var cardfront = theGame.models.CardFront.clone();
     //uv for the card front is flipped, so we have to do this for some reason
     cardfront.scale.set(-300, 300, 300);
     var material;
-    if(visible){
+    if(!visible){
         material = new THREE.MeshBasicMaterial({color:'#000000'});
     }else{
         material = new THREE.MeshBasicMaterial({color:'#FFFFFF', map: new THREE.Texture(theCard.image)});
@@ -580,13 +571,13 @@ game.prototype.resetCards = function(){
                         cardToDeck(player.cards[j]);
                         delete player.cards[j].geom;
                     }
-                    //player.cards = [];
+                    player.cards = [];
                     toggleVisible(player.bettingui.mesh, false);
                 }
                 
-                for(var i=0; i<this.sharedCards.cards.length; i++){
-                    cardToDeck(this.sharedCards.cards[i]);
-                    delete this.sharedCards.cards[i].geom;
+                for(var i=0; i<this.deck.perfectDeck.length; i++){
+                    cardToDeck(this.deck.perfectDeck[i]);
+                    delete this.deck.perfectDeck[i].geom;
                 }
                 this.sharedCards.cards = [];
     
@@ -681,18 +672,6 @@ game.prototype.startBetting = function(){
         this.bettingOrder = playersLeft;
         this.better = 0;
         this.startBetting();
-    }else{
-        //pot is full
-      
-      
-        this.better = 0;
-        if(this.currentAuthority === globalUserId){
-
-            this.step++;
-            console.log('done betting, on to the next step!');
-            this.runStep();
-
-        }
     }
   }else if(this.dealingOrder[this.bettingOrder[this.better]].state !== 3){
     this.dealingOrder[this.bettingOrder[this.better]].state = 3;
@@ -712,12 +691,35 @@ var betStep = function(game){
             game.dealingOrder[game.bettingOrder[game.better]].bet(game.bigBlind);
             game.dealingOrder[game.bettingOrder[game.better]].renderChips();
             game.nextBet();
+            
             makePot();
         }else{
             game.dealingOrder[game.bettingOrder[game.better]].state = 3;
         }
-
+    
+        //this.better === this.bettingOrder.length;
+    
+        
 }
+
+
+
+function checkForDoneBetting(){
+    console.log('running');
+    if(theGame.currentAuthority === globalUserId && theGame.better === theGame.bettingOrder.length && theGame.bettingOrder.length > 0){
+        console.log('auto moving!');
+        theGame.better = 0;
+        theGame.step++;
+        theGame.runStep();
+    }
+    
+    setTimeout(checkForDoneBetting, 1000);
+    
+}
+
+            
+
+
 
 var getSharedCardPosition = function(i){
     return {x:(80-(cardTemplate.width+15)*i), y: 0, z: (-80+(cardTemplate.width+15)*i)};
@@ -748,6 +750,8 @@ var texasHoldEm = {
 			exec: function(game){
 				//deal 2 to players                
                 for(var i=0; i<game.players.length; i++){
+                  console.log("players look like this", game.players[i].state > -1, game.players[i].cards.length);
+                  game.players[i].cards = [];
                   if(game.players[i].state > -1 && game.players[i].cards.length === 0){
                     game.deck.dealTo(game.players[i], 2);
                     game.players[i].state = 1;    //player animates their own cards 
@@ -772,12 +776,12 @@ var texasHoldEm = {
                 for(var i=0; i<game.sharedCards.cards.length; i++){ 
                    game.sharedCards.cards[i] = game.deck.getCard(game.sharedCards.cards[i], true, true);
                    var toSharedTween = new TWEEN.Tween(game.sharedCards.cards[i].movementTween.position).to(getSharedCardPosition(i), 2000); 
-                   toSharedTween.onUpdate((function(card){
+                   toSharedTween.onUpdate((function(card, movementTween){
                       return function(value1){
                           //move the cards to the player
-                        card.geom.position.copy(card.movementTween.position);
+                        card.position.copy(movementTween.position);
                       }
-                    }(game.sharedCards.cards[i])));
+                    }(game.sharedCards.cards[i].geom, game.sharedCards.cards[i].movementTween)));
                    toSharedTween.start();
                 }
                 game.step = 4;
@@ -969,7 +973,7 @@ var texasHoldEm = {
             
             game.rotateDealers();
             
-            //sendUpdate({transferControl: game.dealingOrder[game.dealer].spot, endstatePlayers: playerStates}, "transferControl", {thenUpdate: true});
+            sendUpdate({transferControl: game.dealingOrder[game.dealer].spot, endstatePlayers: playerStates}, "transferControl", {thenUpdate: true});
           
     
         }

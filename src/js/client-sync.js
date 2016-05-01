@@ -98,6 +98,9 @@ function processUpdates(newUpdates){
         switch(updateType){
             case "startedLevel":
                 
+                cutoffTime = newUpdates[x].timestamp;
+                
+                
                 break;
             case "unlockGame":
                 
@@ -152,7 +155,7 @@ function processUpdates(newUpdates){
             case "dealingCards":
                 
                     for(var i=0; i<data.player.cards.length; i++){
-                        theGame.players[data.index].cards[i] = theGame.deck.getCard(data.player.cards[i], false, theGame.players[data.index].userId === globalUserId);
+                        theGame.players[data.index].cards[i] = data.player.cards[i];
                         //remove a card from the deck, so if the host refreshes their deck is still at the same state
                         theGame.deck.shuffledDeck.pop();
                     }
@@ -167,7 +170,8 @@ function processUpdates(newUpdates){
             case "startHand":
                 //theGame.currentAuthority = data.authority;
                 authority = data.authority;
-                
+                theGame.resetCards();
+
                 
                 
                 
@@ -177,6 +181,7 @@ function processUpdates(newUpdates){
                     if(theGame.players[i].state === 0){    //they're  waiting
                       theGame.players[i].state = 2;
                     }
+                    theGame.players[i].cards = [];
                   }
                 theGame.resetDealers();
                 theGame.bettingPots = [];
@@ -280,90 +285,130 @@ function processUpdates(newUpdates){
                         lastMessage = false;
                     
                     awardMoney([thisPlayer]);
-                    
-                    theGame.resetCards();
-                
+                                    
                 break;
             case "playerWin":
                 
                 
+                    toggleVisible(theGame.betCube, false);
+                
                     var highestHands = data.hands;
-                    
                      var handOrder = Object.keys(highestHands).map(function(val){return parseInt(val)});
+                    
                     handOrder.sort(function(a, b){ //sorting in reverse order
                         return b-a;
                     });
                     
                     console.log(highestHands[handOrder[0]].players, "wins with", highestHands[handOrder[0]].hand);
                     
-                    
-                    
-                    /*
-                    //var thisPlayer = theGame.players[data.winningPlayer.spot];
-
-                    //rewrite this so the player can only win the pots they fulfilled
-                    //thisPlayer.win();
-
-
-                    toggleVisible(theGame.winCube, false);
-                    toggleVisible(theGame.betCube, false);
-
-                    var handObj = thisPlayer.hand;
-                        var pos = new THREE.Vector3();
-                        pos.copy(handObj.position);
-
-                    var forwardDirection = new THREE.Vector3();
-                        forwardDirection.copy(handObj.userData.forward);
-                        forwardDirection.multiplyScalar(-100);
-                        pos.add(forwardDirection);
-                        pos.y += 25;
-
-                    if(typeof data.hand !== 'undefined'){
-                        //show this players cards above their head
-
-                        var message = "Player won last hand with "+data.hand.name+"!";
-                        var winMessage = new errorMessage({
-                                timeToDisappear: 5000,
-                                messageType: 2,
-                                message: message,
-                                pos: pos,
-                                rot: handObj.quaternion
-                        });
-                        delete lastMessage;
-                        var cardMessage = "";
-                        for(var i=0; i<data.hand.cards.length; i++){
-                            cardMessage += ", ";
-                            cardMessage += theGame.deck.getCard(data.hand.cards[i]).friendlyRepresentation();
-                        }
-                        var pos2 = new THREE.Vector3();
-                        pos2.copy(pos);
-                        pos2.y += 50;
-                        var whichCardsMessage = new errorMessage({
-                            timeToDisappear: 8000,
-                            messageType: 3,
-                            message: cardMessage,
-                            pos: pos2,
-                            rot: handObj.quaternion
-                        });
-                    }else{
-
-                        //forfeit, don't have to show cards!
-
-                        var message = "Player won by forfeit!";
-                        var winMessage = new errorMessage({
-                                timeToDisappear: 5000,
-                                messageType: 2,
-                                message: message,
-                                pos: pos,
-                                rot: handObj.quaternion
-                        });
-                        lastMessage = false;
-
-                    }
+                    var handIndex = 0;
                 
-                theGame.resetCards();
+                    for(var i=theGame.bettingPots.length-1; i>=0; i--){
+                        var thisPot = theGame.bettingPots[i];
+                        if(highestHands[handOrder[handIndex]].players.length === 1){
+                            var winningPlayer = theGame.players[highestHands[handOrder[handIndex]].players[0].spot];
+                            
+                            if(winningPlayer.totalBet >= thisPot.amountToContribute){
+                                winningPlayer.money += thisPot.amount;
+                                
+                                //TODO: Figure out something better to do with this
+                                
+                                var handObj = winningPlayer.hand;
+                                    var pos = new THREE.Vector3();
+                                    pos.copy(handObj.position);
 
-                */
+                                var forwardDirection = new THREE.Vector3();
+                                    forwardDirection.copy(handObj.userData.forward);
+                                    forwardDirection.multiplyScalar(-100);
+                                    pos.add(forwardDirection);
+                                    pos.y += 25;
+                                
+                                var message = winningPlayer.name+" won "+thisPot.amount+" with "+highestHands[handOrder[handIndex]].hand.name+"!";
+                                var winMessage = new errorMessage({
+                                        timeToDisappear: 5000,
+                                        messageType: 2,
+                                        message: message,
+                                        pos: pos,
+                                        rot: handObj.quaternion
+                                });
+                                
+                                
+                                var cardMessage = "";
+                                for(var j=0; j<highestHands[handOrder[handIndex]].hand.cards.length; j++){
+                                    if(j !== 0){
+                                        cardMessage += ", ";
+                                    }
+                                    cardMessage += card.prototype.friendlyRepresentation.apply(highestHands[handOrder[handIndex]].hand.cards[j]);
+                                }
+                                var pos2 = new THREE.Vector3();
+                                pos2.copy(pos);
+                                pos2.y += 50;
+                                var whichCardsMessage = new errorMessage({
+                                    timeToDisappear: 8000,
+                                    messageType: 3,
+                                    message: cardMessage,
+                                    pos: pos2,
+                                    rot: handObj.quaternion
+                                });
+                                
+                            }else{
+                                //not qualified for this hand, let's go to the next biggest hand
+                                handIndex++;
+                                i++;
+                            }
+                            
+                        }else{
+                            
+                            for(var j=0; j<theGame.players[highestHands[handOrder[handIndex]]].players.length; j++){
+
+                                var winningPlayer = theGame.players[highestHands[handOrder[handIndex]]].players[j];
+                                winningPlayer.money += thisPot.amount/theGame.players[highestHands[handOrder[handIndex]]].players.length;
+
+                                                           
+                                var handObj = winningPlayer.hand;
+                                    var pos = new THREE.Vector3();
+                                    pos.copy(handObj.position);
+
+                                var forwardDirection = new THREE.Vector3();
+                                    forwardDirection.copy(handObj.userData.forward);
+                                    forwardDirection.multiplyScalar(-100);
+                                    pos.add(forwardDirection);
+                                    pos.y += 25;
+                                
+                                var message = winningPlayer.name+" won "+thisPot.amount+" with "+highestHands[handOrder[handIndex]].hand.name+"!";
+                                var winMessage = new errorMessage({
+                                        timeToDisappear: 5000,
+                                        messageType: 2,
+                                        message: message,
+                                        pos: pos,
+                                        rot: handObj.quaternion
+                                });
+                                
+                                
+                                var cardMessage = "";
+                                for(var j=0; j<highestHands[handOrder[handIndex]].hand.cards.length; j++){
+                                    if(j !== 0){
+                                        cardMessage += ", ";
+                                    }
+                                    cardMessage += card.prototype.friendlyRepresentation.apply(highestHands[handOrder[handIndex]].hand.cards[j]);
+                                }
+                                var pos2 = new THREE.Vector3();
+                                pos2.copy(pos);
+                                pos2.y += 50;
+                                var whichCardsMessage = new errorMessage({
+                                    timeToDisappear: 8000,
+                                    messageType: 3,
+                                    message: cardMessage,
+                                    pos: pos2,
+                                    rot: handObj.quaternion
+                                });
+                            
+                            
+                        }
+                    }
+                }
+            
+                    
                 
                 break;
             case "dealSharedCards":
@@ -380,12 +425,18 @@ function processUpdates(newUpdates){
                         theGame.players[i].state = data.endstatePlayers[i].state;
                         theGame.players[i].money = data.endstatePlayers[i].money;
                 }
+                theGame.resetCards();
+                
+                theGame.roundRecord = [];
+                    
+                //we're about to get a hell of a lot of new updates
+                authority = theGame.players[data.transferControl].userId;
                 
                 if(theGame.players[data.transferControl].userId === globalUserId){
                     //we are now the dealer!
                     //apply the money and spots from the previous dealer
                     
-                    theGame.deck.shuffle();
+                    //theGame.deck.shuffle();
                     authority = globalUserId;
                     toggleVisible(theGame.players[data.transferControl].optionsui.mesh, true);
                     //create a new round record, send it to everyone
@@ -400,7 +451,7 @@ function processUpdates(newUpdates){
 
                             if(theGame.players[i].state > -1){
                                 theGame.players[i].state = 0;
-                                theGame.roundRecord.push({data:{registerIndex: i, userId: theGame.players[i].userId, money: theGame.players[i].money}, timestamp: Date.now(), title: "registerPlayer"});
+                                theGame.roundRecord.push({data:{registerIndex: i, userId: theGame.players[i].userId, money: theGame.players[i].money, name: theGame.players[i].name}, timestamp: Date.now(), title: "registerPlayer"});
                             }
 
                         }
@@ -412,6 +463,7 @@ function processUpdates(newUpdates){
                         theGame.resetDealers();
                         theGame.bettingPots = [];
                         theGame.bettingPots.push(new pot());
+                        theGame.deck.shuffle();
                         sendUpdate({authority:globalUserId, deck: getSafeCards({cards: theGame.deck.shuffledDeck}), dealer: theGame.dealer},"startHand");
 
                         //push all these updates
@@ -421,14 +473,7 @@ function processUpdates(newUpdates){
                     }, 5000);
                     
                     
-                }else{
-                    theGame.roundRecord = [];
-                    
-                    //we're about to get a hell of a lot of new updates
-                    authority = theGame.players[data.transferControl].userId;
-                    
                 }
-                
                 break;
             default:
                 console.log("No action specified for update", updateType, data);
@@ -464,6 +509,7 @@ function processUpdates(newUpdates){
 
 
 var prevUpdate;
+var cutoffTime; //if we recieve an update earlier than this, ignore it
 
 function onUpdateRecieved(newVal){
     var response = newVal.val(); 
@@ -480,7 +526,7 @@ function onUpdateRecieved(newVal){
         
         var newUpdates = response.data.filter(function(element){
             for(var i=0; i<theGame.roundRecord.length; i++){
-                if(element.timestamp === theGame.roundRecord[i].timestamp){
+                if(cutoffTime > element.timestamp || element.timestamp === theGame.roundRecord[i].timestamp){
                     return false;
                 }
             }
@@ -567,7 +613,6 @@ function mergeDeep(target, source) {
   }
   return target;
 }
-
 
 
 

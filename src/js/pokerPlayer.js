@@ -128,18 +128,16 @@ player.prototype.renderVisuals = function(timeSince){
             
           //if this is the correct player, get correct card
           this.cards[i] = theGame.deck.getCard(this.cards[i], false, globalUserId === this.userId);
-          //otherwise, get a black card
+          //otherwise, get a blank card
           this.cards[i].geom.position.y += offset;
           giveCard(this.cards, this.hand, i);
-          window.setTimeout((function(that, index){
+          window.setTimeout((function(that){
             return function(){ 
-              //move card to hand
-              toggleCard(that.cards[index], true);
               if(that.state === 1){   //only do this if our state hasn't been changed by an update
                 that.state = 2;
               }
             }
-          })(this, i), 4000);
+          })(this), 4000);
           offset+=0.1;
         }
         this.state = 2;
