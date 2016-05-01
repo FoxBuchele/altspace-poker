@@ -322,143 +322,75 @@ player.prototype.bet = function(amount){
    this.betThisRound += amount;
    this.totalBet += amount;
    this.money -= amount;
-        
-   theGame.currentBet = this.betThisRound;
+   if(this.betThisRound > theGame.currentBet){
+          theGame.currentBet = this.betThisRound;
+   }     
     
 }
 
 player.prototype.contributeToPot = function(amount){
-  /*var lowestPlayer = -1;
-  for(var i=0; i<theGame.players.length; i++){
-      var player = theGame.players[i];
-      if(player.state > 0 && player.state < 4){
-          //in the round still
-          if(player.money < amount){    //they have less than this person is trying to bet
-             lowestPlayer = i;
-          }
-      }
-  }
   
-  if(lowestPlayer !== -1){
-      var poorPlayer = theGame.players[lowestPlayer];
-      var diff = amount - poorPlayer.money;
-      theGame.bettingPots[0].amount += poorPlayer.money;
-      theGame.bettingPots[0].amountToContribute += poorPlayer.money;
-      theGame.newPot();
-      theGame.bettingPots[0].amount += diff;
-      theGame.bettingPots[0].amountToContribute += diff;
-  }else{
-      theGame.bettingPots[0].amount += amount;
-      theGame.bettingPots[0].amountToContribute += amount;
-
-  }*/
-    
-  var bet = this.totalBet;
-  var toBet = 0;
+  var alreadyBet = this.totalBet;
+  var potSoFar = 0;
   for(var i=theGame.bettingPots.length-1; i>=0; i--){
-      var thisPot = theGame.bettingPots[i];
-      if(amount === 0){
-          break;
-      }
-      if(bet > thisPot.amountToContribute+toBet){
-          console.log('already satisfied this pot');
-          toBet += thisPot.amountToContribute;
-      }else{
-         /* if(bet !== thisPot.amountToContribute+toBet){
+        if(amount < 0){
+            debugger;
+            return false;
+        }else if(amount === 0){
+            return false;
+        }
+        var thisPot = theGame.bettingPots[i];
+        potSoFar += theGame.bettingPots[i].amountToContribute;
+        if(thisPot.locked === true){
+            
+            var amountToSatisfy = potSoFar - alreadyBet;
+            if(amountToSatisfy > 0){
+                thisPot.amount += amountToSatisfy;
+                alreadyBet += amountToSatisfy;
+                amount -= amountToSatisfy;
+            }
+            
+        }else if(potSoFar >= alreadyBet){
+            //this is the one we need to contribute to
+            var amountToRaise = (alreadyBet - potSoFar) + amount;
+            if(amountToRaise < 0){
+                console.log("Should not be negative!");
               
-              
-              
-              console.log('raising, need to check if we make a new pot!')
-              for(var i=0; i<theGame.players.length; i++){
-                  var player = theGame.players[i];
-                  if(player.state > 0 && player.state < 4){
+            }
+            console.log('raising', amountToRaise);
+            
+            //see if we need to preemptively split the pot
+             var lowestPlayer = false;
+              for(var j=0; j<theGame.players.length; j++){
+                  var player = theGame.players[j];
+                  if(player.state > 0 && player.state < 4 && player.money > potSoFar){
                       //in the round still
                       if(player.money < amount){    //they have less than this person is trying to bet
-                         lowestPlayer = i;
+                         lowestPlayer = player;
                       }
                   }
               }
-              //this is too much for the cheapest player, need to make a new pot
-              if(lowestPlayer !== -1){
-                  console.log('making a new pot for player ', theGame.players[lowestPlayer]);
-                  var poorPlayer = theGame.players[lowestPlayer];
-                  var diff = amount - poorPlayer.money;
-                  
-                  theGame.bettingPots[0].amount += poorPlayer.money;
-                  theGame.bettingPots[0].amountToContribute += poorPlayer.money;
-                  theGame.newPot();
-                  theGame.bettingPots[0].amount += diff;
-                  theGame.bettingPots[0].amountToContribute += diff;
-                  
-              }else{
-                  //raising the amount needed for this pot
-                  thisPot.amount += amount;
-                  thisPot.amountToContribute += amount;
-                  amount = 0;
-              }
-              
-           */   
-              
-         // }else{
-          
-          if(amount > thisPot.amountToContribute){
+            
+            if(lowestPlayer !== false){
              
-              
-              var lowestPlayer = -1;
-               console.log('raising, need to check if we make a new pot!')
-                  for(var j=0; j<theGame.players.length; j++){
-                      var player = theGame.players[j];
-                      if(player.state > 0 && player.state < 4){
-                          //in the round still
-                          if(player.money < amount){    //they have less than this person is trying to bet
-                             lowestPlayer = j;
-                          }
-                      }
-                  }
-              
-              if(lowestPlayer !== -1){
-                  console.log('making a new pot for player ', theGame.players[lowestPlayer]);
-                  var poorPlayer = theGame.players[lowestPlayer];
-                 // var diff = amount - poorPlayer.money;
-                  
-                  //checking this pot, raising next
-                  thisPot.amount += poorPlayer.money;
-                  thisPot.amountToContribute += poorPlayer.money;
-                  amount -= poorPlayer.money;
-                  toBet += poorPlayer.money;
-                  //thisPot.amountToContribute += poorPlayer.money;
-                  theGame.newPot(); //adds a pot to the beginning of the list
-                  
-                  //this will bet the last pot, so let's fix it
-                  thisPot = theGame.bettingPots[i];
-                  thisPot.amountToContribute = amount;
-                  thisPot.amount += amount;
-                  amount = 0;
-                  
-                  //i++;
-                  //.amount += diff;
-                  // .amountToContribute += diff;
-                  
-              }else{
-                  //raising the amount needed for this pot
-                  console.log('raising');
-                  thisPot.amount += amount;
-                  thisPot.amountToContribute += (amount - thisPot.amountToContribute + bet);
-                  amount = 0;
-              }
-              
-              
-              
-          }else{
-              console.log('checking');
-              thisPot.amount += amount;
-              amount = 0;
-          }
-          //}
-          //less than or equal to thisPot.amountToContribute+toBet;
-          //e.g., have not contributed to this pot yet
-          
-      }
+                var minBet = lowestPlayer.money;
+                thisPot.amount += minBet;
+                thisPot.amountToContribute += minBet;
+                potSoFar += minBet;
+                alreadyBet += minBet;
+                theGame.newPot();
+                i++;
+                amount -= minBet;
+
+            }else{
+                thisPot.amount += amount;
+                thisPot.amountToContribute += amountToRaise;
+                amount = 0;
+            }
+        }else{
+            //we've already fulfilled this pot
+            alreadyBet -= thisPot.amountToContribute;
+        }   
   }
     
 }

@@ -613,7 +613,7 @@ game.prototype.resetBetters = function(){
 game.prototype.playersThatNeedToBet = function(){
     var players = [];
     for(var i=0; i<this.dealingOrder.length; i++){
-        if(this.dealingOrder[i].state === 2 && this.dealingOrder[i].betThisRound < this.currentBet){
+        if(this.dealingOrder[i].state === 2 && this.dealingOrder[i].money > 0 && this.dealingOrder[i].betThisRound < this.currentBet){
             
             players.push(i);
             
@@ -687,7 +687,6 @@ game.prototype.startBetting = function(){
       
         this.better = 0;
         if(this.currentAuthority === globalUserId){
-          //gonna just use a timeout
 
             this.step++;
             console.log('done betting, on to the next step!');
@@ -702,6 +701,7 @@ game.prototype.startBetting = function(){
 
 var betStep = function(game){
         toggleVisible(game.betCube, true);// game.betCube.visible = true;
+        game.resetDealers();
         game.resetBetters();
         game.better = 0;
         game.currentBet = 0;
@@ -929,11 +929,9 @@ var texasHoldEm = {
                         
                     }
                 
-                    //sendUpdate({toStep: 10}, "changeGameStep");
-                    game.step = 10;
-                    //game.resetCards();
 
-                   // game.runClientStep();
+                    game.step = 10;
+
                     game.runStep(); //kick out players without money, transfer control
                 
                 
