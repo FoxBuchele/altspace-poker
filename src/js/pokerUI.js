@@ -19,62 +19,66 @@ function errorMessage(configObj){
     
 }
 
-function displayMessage(errorMessage){
-    
-    
-    errorMessage.mesh = createMessage(errorMessage.message, errorMessage.messageType, errorMessage.arrowSide);
-    
-    sim.scene.add(errorMessage.mesh);
-    
-    errorMessage.mesh.quaternion.copy(errorMessage.messageRot);
-    
-    var toPos = new THREE.Vector3();
-    var fromPos = new THREE.Vector3();
-    toPos.copy(errorMessage.messagePos);
-    fromPos.copy(errorMessage.messagePos);
-    
-    errorMessage.mesh.scale.copy(errorMessage.scale);
-    
-    errorMessage.moveDirection.multiplyScalar(errorMessage.scale.x);
-    
-    toPos.add(errorMessage.moveDirection);
-    
-    
-    var toPointTween = new TWEEN.Tween(fromPos).to(toPos, 1000);
-    toPointTween.onUpdate(function(){
-        errorMessage.mesh.position.copy(fromPos);
-    });
-    
-    toPointTween.easing(TWEEN.Easing.Elastic.InOut);
-    
-    window.setTimeout(function(){
-        sim.scene.remove(errorMessage.mesh);
-    }, errorMessage.timeToDisappear);
-    
-    toPointTween.start();
-    /*var toPlayerTween = new TWEEN.Tween(thisCard.movementTween.position).to({x:toObj.position.x, z: toObj.position.z}, 2000);
-            toPlayerTween.onUpdate((function(card){
-              return function(value1){
-                  //move the cards to the player
-                card.geom.position.copy(card.movementTween.position);
-              }
-            }(thisCard)));
-  
-            toPlayerTween.onComplete((function(card, hand){
-              return function(value1){
-                
-                //add the cards to the 'hand' object
-                
-                THREE.SceneUtils.attach(card.geom, sim.scene, hand);
-                hand.updateMatrixWorld();
-                 
-                //our position has updated, so lets update the movementTween
-                card.movementTween.position.copy(card.geom.position); 
-                card.movementTween.rotation.set(card.geom.rotation.x, card.geom.rotation.y, card.geom.rotation.z);
+var prevMessageTimeout = null;
 
-                
-              }
-            }(thisCard, toObj)));*/
+function displayMessage(messages){
+    
+    if(prevMessageTimeout !== false){
+        clearTimeout(prevMessageTimeout);
+    }
+    
+    
+    prevMessageTimeout = window.setTimeout(function(){
+        if(typeof messages.length === "undefined"){
+            messages = [messages];
+        }
+        
+        for(var i=0; i<messages.length; i++){
+            messages[i].scale = messages[i].scale || new THREE.Vector3(1, 1, 1);
+            messages[i].arrowSide = messages[i].arrowSide || "down";
+            messages[i].moveDirection = new THREE.Vector3(0, 50, 0);
+            displayMessageSingle(messages[i]);   
+        }
+        
+        
+        prevMessageTimeout = false;
+    }, 100);
+    
+    
+   
+}
+
+function displayMessageSingle(message){
+            message.mesh = createMessage(message.message, message.messageType, message.arrowSide);
+    
+            sim.scene.add(message.mesh);
+
+            message.mesh.quaternion.copy(message.messageRot);
+
+            var toPos = new THREE.Vector3();
+            var fromPos = new THREE.Vector3();
+            toPos.copy(message.messagePos);
+            fromPos.copy(message.messagePos);
+
+            message.mesh.scale.copy(message.scale);
+
+            message.moveDirection.multiplyScalar(message.scale.x);
+
+            toPos.add(message.moveDirection);
+
+
+            var toPosTween = new TWEEN.Tween(fromPos).to(toPos, 1000);
+            toPosTween.onUpdate(function(){
+                message.mesh.position.copy(fromPos);
+            });
+
+            toPosTween.easing(TWEEN.Easing.Elastic.InOut);
+
+            window.setTimeout(function(){
+                sim.scene.remove(message.mesh);
+            }, message.timeToDisappear);
+
+            toPosTween.start();
 }
 
 function createMessage(text, type, direction){
@@ -90,8 +94,6 @@ function createMessage(text, type, direction){
         textArea = canvasEl.getContext('2d');
         textArea.font = "42px Arial";
     }
-    
-    textArea.textAlign = "center";
 
     
     var fillColor;
@@ -130,6 +132,7 @@ function createMessage(text, type, direction){
     //textArea.fillRect(0, 0, canvasEl.width, canvasEl.height);
     
     textArea.fillStyle = textColor;
+    textArea.textAlign = "center";
     textArea.textBaseline = "middle";
     textArea.fillText(text, canvasEl.width/2, canvasEl.height/2);
     
@@ -188,6 +191,59 @@ function createMessagePointer(canvas, color, direction){
     
     
     return holder;
+}
+
+function displayBlindMessages(smallBlind, bigBlind, players){
+                          
+        var handObj = players[0].hand;
+            var pos = new THREE.Vector3();
+            pos.copy(handObj.position);
+
+        var forwardDirection = new THREE.Vector3();
+            forwardDirection.copy(handObj.userData.forward);
+            forwardDirection.multiplyScalar(-100);
+            pos.add(forwardDirection);
+            pos.y += 25;
+        
+        var message1 = players[0].name+" bet "+smallBlind+" for the small blind";
+        var message2 = players[1].name+" bet "+bigBlind+" for the big blind";
+        
+        var betMessages= [];
+        
+        betMessages.push({
+                timeToDisappear: 3000,
+                messageType: 2,
+                message: message1,
+                messagePos: pos,
+                messageRot: handObj.quaternion,
+                arrowSide: "down",
+                moveDirection: new THREE.Vector3(0, 50, 0),
+                scale: new THREE.Vector3(1, 1, 1)
+        })
+    
+  
+         var handObj2 = players[1].hand;
+         var pos2 = new THREE.Vector3();
+        pos2.copy(handObj2.position);
+
+        var forwardDirection2 = new THREE.Vector3();
+        forwardDirection2.copy(handObj2.userData.forward);
+        forwardDirection2.multiplyScalar(-100);
+        pos2.add(forwardDirection2);
+        pos2.y += 25;
+        
+        betMessages.push({
+                timeToDisappear: 3000,
+                messageType: 2,
+                message: message2,
+                messagePos: pos2,
+                messageRot: handObj2.quaternion,
+                arrowSide: "down",
+                moveDirection: new THREE.Vector3(0, 50, 0),
+                scale: new THREE.Vector3(1, 1, 1)
+        })
+        
+        var blindMessages = new displayMessage(betMessages);
 }
 
                                                

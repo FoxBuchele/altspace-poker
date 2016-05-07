@@ -166,6 +166,8 @@ player.prototype.renderVisuals = function(timeSince){
             
         //theGame.betCube.visible = true;
         theGame.betCube.position.copy(this.hand.position);
+        theGame.betCube.position.setY(this.hand.position.y + 150);
+        
         break;
       case 4:
         //folded, out for this round 
@@ -421,33 +423,25 @@ player.prototype.fold = function(){
   this.cards = [];
   this.state = 4;
     
-  //if we are the authority
-  if(theGame.currentAuthority === globalUserId){
-  //go through each player, if everyone has either folded or has a value < 1, remaining player wins
-      var potentialPlayers = [];
-      for(var i=0; i<theGame.dealingOrder.length; i++){
-           if(theGame.dealingOrder[i].state > 0 && theGame.dealingOrder[i].state < 4){
-               potentialPlayers.push(theGame.dealingOrder[i]);
-           }
-      }
-      
-        if(potentialPlayers.length === 1){
-            sendUpdate({winnerByForfeit: getSafePlayer(potentialPlayers[0])}, "playerWinByForfeit", {thenUpdate: true});
-            
-            
-            theGame.resetCards();
-            
-            //sendUpdate({toStep: 10}, "changeGameStep");
-            theGame.step = 10;
-           // theGame.runClientStep();
-            theGame.runStep(); 
+  var potentialPlayers = [];
+              for(var i=0; i<theGame.dealingOrder.length; i++){
+                   if(theGame.dealingOrder[i].state > 0 && theGame.dealingOrder[i].state < 4){
+                       potentialPlayers.push(theGame.dealingOrder[i]);
+                   }
+              }
 
-        }else{
-            theGame.nextBet();
-        }
-  }else{
-       theGame.nextBet();
-  }
+                if(potentialPlayers.length === 1){
+                    theGame.better = 0;
+                    theGame.step = 10;
+                    if(theGame.currentAuthority === globalUserId){
+                        sendUpdate({winnerByForfeit: getSafePlayer(potentialPlayers[0])}, "playerWinByForfeit", {thenUpdate: true});
+                        theGame.runStep();
+                    }
+                      
+                }else{
+                    theGame.nextBet();
+                } 
+  
     
   
     

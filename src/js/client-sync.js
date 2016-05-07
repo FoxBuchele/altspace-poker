@@ -88,7 +88,6 @@ function processUpdates(newUpdates){
     var indexOfError = 0;
     try{
         
-    var lastMessage = false;
     for(var x=0; x<newUpdates.length; x++){
         indexOfError = x;
         updateType = newUpdates[x].title;
@@ -143,13 +142,13 @@ function processUpdates(newUpdates){
                 forwardDirection.copy(handObj.userData.forward);
                 forwardDirection.multiplyScalar(-150);
                 pos.add(forwardDirection);
-                lastMessage = {
+                var winMessage = new errorMessage({
                     timeToDisappear: 2000,
                     messageType: 1,
                     message: data.name+" joined!",
                     pos: pos,
                     rot: handObj.quaternion
-                };
+                }); 
                 
                 break;
             case "dealingCards":
@@ -188,7 +187,6 @@ function processUpdates(newUpdates){
                 theGame.bettingPots.push(new pot());
                 //theGame.step = 1;
                 theGame.dealer = data.dealer;
-                lastMessage = false;
                // theGame.runClientStep();
                 
                 break;
@@ -226,13 +224,13 @@ function processUpdates(newUpdates){
                 }else{
                     message = name+" bet $"+data.amount+"!";
                 }
-                lastMessage = {
+                var winMessage = new errorMessage({
                         timeToDisappear: 3000,
                         messageType: 2,
                         message: message,
                         pos: pos,
                         rot: handObj.quaternion
-                    };
+                    });
                 break;
             case "playerFold":
                 
@@ -248,13 +246,13 @@ function processUpdates(newUpdates){
                 forwardDirection.multiplyScalar(-100);
                 pos.add(forwardDirection);
                 var message = name+" folded...";
-                lastMessage = {
+                var winMessage = new errorMessage({
                         timeToDisappear: 3000,
                         messageType: 0,
                         message: message,
                         pos: pos,
                         rot: handObj.quaternion
-                    };
+                    });
                 
                 break;
             case "playerWinByForfeit":
@@ -274,7 +272,7 @@ function processUpdates(newUpdates){
                         pos.add(forwardDirection);
                         pos.y += 25;
                 
-                var message = "Player won by forfeit!";
+                var message = thisPlayer.name+" won by forfeit!";
                         var winMessage = new errorMessage({
                                 timeToDisappear: 5000,
                                 messageType: 2,
@@ -282,9 +280,12 @@ function processUpdates(newUpdates){
                                 pos: pos,
                                 rot: handObj.quaternion
                         });
-                        lastMessage = false;
-                    
-                    awardMoney([thisPlayer]);
+                    var totalMoney = 0;
+                    for(var i=0; i<theGame.bettingPots.length; i++){
+                        totalMoney += theGame.bettingPots[i].amount;
+                    }
+                    thisPlayer.money += totalMoney;
+                    theGame.bettingPots = [];
                                     
                 break;
             case "playerWin":
@@ -305,9 +306,9 @@ function processUpdates(newUpdates){
                 
                     for(var i=theGame.bettingPots.length-1; i>=0; i--){
                         var thisPot = theGame.bettingPots[i];
+                        var sendingMessages = [];
                         if(highestHands[handOrder[handIndex]].players.length === 1){
                             var winningPlayer = theGame.players[highestHands[handOrder[handIndex]].players[0].spot];
-                            
                             if(winningPlayer.totalBet >= thisPot.amountToContribute){
                                 winningPlayer.money += thisPot.amount;
                                 
@@ -324,12 +325,12 @@ function processUpdates(newUpdates){
                                     pos.y += 25;
                                 
                                 var message = winningPlayer.name+" won "+thisPot.amount+" with "+highestHands[handOrder[handIndex]].hand.name+"!";
-                                var winMessage = new errorMessage({
+                                sendingMessages.push({
                                         timeToDisappear: 5000,
                                         messageType: 2,
                                         message: message,
-                                        pos: pos,
-                                        rot: handObj.quaternion
+                                        messagePos: pos,
+                                        messageRot: handObj.quaternion
                                 });
                                 
                                 
@@ -343,12 +344,12 @@ function processUpdates(newUpdates){
                                 var pos2 = new THREE.Vector3();
                                 pos2.copy(pos);
                                 pos2.y += 50;
-                                var whichCardsMessage = new errorMessage({
+                                sendingMessages.push({
                                     timeToDisappear: 8000,
                                     messageType: 3,
                                     message: cardMessage,
-                                    pos: pos2,
-                                    rot: handObj.quaternion
+                                    messagePos: pos2,
+                                    messageRot: handObj.quaternion
                                 });
                                 
                             }else{
@@ -376,12 +377,12 @@ function processUpdates(newUpdates){
                                     pos.y += 25;
                                 
                                 var message = winningPlayer.name+" won "+thisPot.amount+" with "+highestHands[handOrder[handIndex]].hand.name+"!";
-                                var winMessage = new errorMessage({
+                                 sendingMessages.push({
                                         timeToDisappear: 5000,
                                         messageType: 2,
                                         message: message,
-                                        pos: pos,
-                                        rot: handObj.quaternion
+                                        messagePos: pos,
+                                        messageRot: handObj.quaternion
                                 });
                                 
                                 
@@ -395,17 +396,19 @@ function processUpdates(newUpdates){
                                 var pos2 = new THREE.Vector3();
                                 pos2.copy(pos);
                                 pos2.y += 50;
-                                var whichCardsMessage = new errorMessage({
+                                sendingMessages.push({
                                     timeToDisappear: 8000,
                                     messageType: 3,
                                     message: cardMessage,
-                                    pos: pos2,
-                                    rot: handObj.quaternion
+                                    messagePos: pos2,
+                                    messageRot: handObj.quaternion
                                 });
                             
                             
                         }
                     }
+                        
+                    displayMessage(sendingMessages);
                 }
             
                     
@@ -416,63 +419,71 @@ function processUpdates(newUpdates){
                 for(var i=0; i<data.sharedCards.length; i++){
                     theGame.deck.shuffledDeck.pop();
                 }
-                //theGame.step = data.stepToRerun;
-               // theGame.runClientStep();
                 break;
             case "transferControl":
                 
                 for(var i=0; i<theGame.players.length; i++){
                         theGame.players[i].state = data.endstatePlayers[i].state;
                         theGame.players[i].money = data.endstatePlayers[i].money;
+                        toggleVisible(theGame.players[i].optionsui.mesh, false);
                 }
                 theGame.resetCards();
-                
+                cutoffTime = newUpdates[x].timestamp;
+
                 theGame.roundRecord = [];
                     
                 //we're about to get a hell of a lot of new updates
                 authority = theGame.players[data.transferControl].userId;
                 
+                toggleVisible(theGame.players[data.transferControl].optionsui.mesh, true);
+
+                
                 if(theGame.players[data.transferControl].userId === globalUserId){
+                    
+                    console.log("WE ARE NOW AUTHORITY");
                     //we are now the dealer!
                     //apply the money and spots from the previous dealer
                     
+                    theGame.roundRecord = [{title: "startedLevel", timestamp: Date.now()}];
+                    cutoffTime = theGame.roundRecord[0].timestamp;
+
+                    //lets wait 5 seconds before moving on
+                    //register players
+
+                    for(var i=0; i<theGame.players.length; i++){
+
+                        if(theGame.players[i].state > -1){
+                            theGame.players[i].state = 0;
+                            theGame.roundRecord.push({data:{registerIndex: i, userId: theGame.players[i].userId, money: theGame.players[i].money, name: theGame.players[i].name}, timestamp: Date.now(), title: "registerPlayer"});
+                        }
+
+
+
+                    }
+                    
+                    for(var i=0; i<theGame.players.length; i++){
+                        if(theGame.players[i].state === 0){    //they're  waiting
+                          theGame.players[i].state = 2;
+                        }
+                    }
+                    theGame.resetDealers();
+                    theGame.bettingPots = [];
+                    theGame.bettingPots.push(new pot());
+                    theGame.deck.shuffle();
+                    sendUpdate({authority:globalUserId, deck: getSafeCards({cards: theGame.deck.shuffledDeck}), dealer: theGame.dealer},"startHand");
+
                     //theGame.deck.shuffle();
                     authority = globalUserId;
-                    toggleVisible(theGame.players[data.transferControl].optionsui.mesh, true);
                     //create a new round record, send it to everyone
                     
                     //start level
                     setTimeout(function(){
-                        theGame.roundRecord = [{title: "startedLevel", timestamp: Date.now()}];
-                        //lets wait 5 seconds before moving on
-                        //register players
-
-                        for(var i=0; i<theGame.players.length; i++){
-
-                            if(theGame.players[i].state > -1){
-                                theGame.players[i].state = 0;
-                                theGame.roundRecord.push({data:{registerIndex: i, userId: theGame.players[i].userId, money: theGame.players[i].money, name: theGame.players[i].name}, timestamp: Date.now(), title: "registerPlayer"});
-                            }
-
-                        }
-                        for(var i=0; i<theGame.players.length; i++){
-                            if(theGame.players[i].state === 0){    //they're  waiting
-                              theGame.players[i].state = 2;
-                            }
-                        }
-                        theGame.resetDealers();
-                        theGame.bettingPots = [];
-                        theGame.bettingPots.push(new pot());
-                        theGame.deck.shuffle();
-                        sendUpdate({authority:globalUserId, deck: getSafeCards({cards: theGame.deck.shuffledDeck}), dealer: theGame.dealer},"startHand");
-
-                        //push all these updates
-                        //then deal the cards
-                        //sendUpdate({authority:globalUserId, deck: getSafeCards({cards: game.deck.shuffledDeck})}, "startHand");
                         theGame.start();
                     }, 5000);
                     
                     
+                }else{
+                    location.reload();
                 }
                 break;
             default:
@@ -483,9 +494,6 @@ function processUpdates(newUpdates){
         
     }
     
-        if(lastMessage !== false){
-            var testMessage = new errorMessage(lastMessage);
-        }
         
     }
     catch(e){
@@ -623,6 +631,8 @@ function sendUpdate(extraData, title, options){
   title = title || "";
   options = options || {};
   console.groupCollapsed("Sending update '"+ title + "'");
+   // processUpdates([{title:title, timestamp: Date.now(), data:extraData}])
+    //theGame.syncInstance.update({title:title, data:theGame.roundRecord});
   if(typeof options.thenUpdate === "undefined" || options.thenUpdate === false){
     theGame.roundRecord.push({title: title, timestamp: Date.now(), data: extraData});
     theGame.syncInstance.update({title: title, data: theGame.roundRecord}); 
@@ -630,10 +640,8 @@ function sendUpdate(extraData, title, options){
     //should process this update immediately
     var time = Date.now();
     var newArr = theGame.roundRecord.concat([{title: title, timestamp: time, data: extraData}])
-   // newArr.push({title: title, timestamp: Date.now(), data: extraData});
     
     theGame.syncInstance.update({title: title, data: newArr});
-//    processUpdates([{title: title, timestamp: time, data: extraData}]);
 
     
     

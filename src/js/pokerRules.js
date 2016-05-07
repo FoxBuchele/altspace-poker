@@ -164,9 +164,9 @@ deck.prototype.getCard = function(theCard, large, visible){
       thisCard.geom.userData.large = large;
       
       if(large){
-        thisCard.geom.scale.set(1.5, 1.5, 1.5);
+        thisCard.geom.scale.set(3, 3, 1);
         thisCard.geom.position.set(i*0.1, thisCard.geom.position.y, i*0.1);
-        thisCard.geom.rotation.set(0, Math.PI/4, 0);
+        //thisCard.geom.rotation.set(0, Math.PI/4, 0);
         toggleVisible(thisCard.geom, true);
         thisCard.movementTween.rotation.copy(thisCard.geom.rotation);
         thisCard.movementTween.position.copy(thisCard.geom.position);
@@ -199,11 +199,13 @@ function createCardGeom(theCard, doubleSided, visible){
     
     var cardfront = theGame.models.CardFront.clone();
     //uv for the card front is flipped, so we have to do this for some reason
-    cardfront.scale.set(-300, 300, 300);
+    cardfront.scale.set(300, 300, 300);
     var material;
     if(!visible){
         material = new THREE.MeshBasicMaterial({color:'#000000'});
+        material.side = THREE.DoubleSide;
     }else{
+        cardfront.scale.setX(-cardfront.scale.x)
         material = new THREE.MeshBasicMaterial({color:'#FFFFFF', map: new THREE.Texture(theCard.image)});
         material.side = THREE.BackSide;
     }
@@ -685,11 +687,17 @@ var betStep = function(game){
         game.better = 0;
         game.currentBet = 0;
         if(game.step === 2){
+            var firstPlayer = game.dealingOrder[game.bettingOrder[game.better]];
+            var firstMoney = Math.min(firstPlayer.money, game.smallBlind);
             game.dealingOrder[game.bettingOrder[game.better]].bet(game.smallBlind);
             game.dealingOrder[game.bettingOrder[game.better]].renderChips();
             game.nextBet();
+            var secondPlayer = game.dealingOrder[game.bettingOrder[game.better]];
+            var secondMoney = Math.min(secondPlayer.money, game.bigBlind);
             game.dealingOrder[game.bettingOrder[game.better]].bet(game.bigBlind);
             game.dealingOrder[game.bettingOrder[game.better]].renderChips();
+            displayBlindMessages(firstMoney, secondMoney, [firstPlayer, secondPlayer]);
+            
             game.nextBet();
             
             makePot();
@@ -705,12 +713,12 @@ var betStep = function(game){
 
 
 function checkForDoneBetting(){
-    console.log('running');
     if(theGame.currentAuthority === globalUserId && theGame.better === theGame.bettingOrder.length && theGame.bettingOrder.length > 0){
-        console.log('auto moving!');
-        theGame.better = 0;
-        theGame.step++;
-        theGame.runStep();
+        if(theGame.logic.steps[theGame.step].execClient === betStep){
+            theGame.better = 0;
+            theGame.step++;
+            theGame.runStep();
+        }
     }
     
     setTimeout(checkForDoneBetting, 1000);
@@ -722,7 +730,8 @@ function checkForDoneBetting(){
 
 
 var getSharedCardPosition = function(i){
-    return {x:(80-(cardTemplate.width+15)*i), y: 0, z: (-80+(cardTemplate.width+15)*i)};
+    var padding = 80;
+    return {x:(220-(cardTemplate.width+padding)*i), y: 100, z: 0};
 }
 
 var texasHoldEm = {

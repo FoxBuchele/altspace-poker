@@ -121,83 +121,81 @@ function ready(firstInstance) {
     
     
     window.setTimeout(function(){
-    
-	altspace.getUser().then(function(result){
-		globalUserId = result.userId;
-		globalUserName = result.displayName;
-	})
-	
-      
-    
-    console.log(firstInstance);
-    
-    if(firstInstance){ 
-        
-        cutoffTime = Date.now();
-        
-        theGame.deck.shuffle(); 
-        
-        theGame.roundRecord = [{title: "startedLevel", timestamp: Date.now()}]
-         
-        instanceBase.child('game').set({title: "Initial data dump", data: theGame.roundRecord});
+
+        if(firstInstance){ 
+
+            cutoffTime = Date.now();
+
+            theGame.deck.shuffle(); 
+
+            theGame.roundRecord = [{title: "startedLevel", timestamp: Date.now()}]
+
+            instanceBase.child('game').set({title: "Initial data dump", data: theGame.roundRecord});
 
 
-    }
-  
-    
-    
-      theGame.syncInstance = instanceBase.child('game');       
-    
-      theGame.syncInstance.once('value', function(newValue){
-          
-        //once we know that we've recieved the first update, load the models
-        
-        
-        
-        console.log('loading all models');
-        var models = {
-            fileBase : ['IndicationArrow', 'BettingText', 'WinnerText', 'MenuSidepanel', 'Menu', 'CardBack', 'CardFront', 'PokerChip', 'PokerTable6Sided'],
-            materials: [bettingMat, bettingMat, bettingMat, menuMat, menuMat, cardBackMat, basicMat, basicMat, tableMat]
         }
-        
-        altspace.utilities.multiloader.init({
-            baseUrl: "assets/Models"
-        })
-        var req = new altspace.utilities.multiloader.LoadRequest();
-        
-        for(var i=0; i<models.fileBase.length; i++){
-            req.objUrls.push(models.fileBase[i]+".obj");
-            req.mtlUrls.push(models.fileBase[i]+".mtl");
-        }
-        
-        theGame.models = {};
-        
-        altspace.utilities.multiloader.load(req, function(){
-            for(var i=0; i<req.objects.length; i++){
-                
-                console.log(req.objects[i]);
-                req.objects[i].scale.set(300, 300, 300);
-                for(var j=0; j<req.objects[i].children.length; j++){
-                     var group = req.objects[i].children[j];
-                     group.material = models.materials[i];
-                }
-                theGame.models[models.fileBase[i]] = req.objects[i];
-                
+
+
+
+          theGame.syncInstance = instanceBase.child('game');       
+
+          theGame.syncInstance.once('value', function(newValue){
+
+            //once we know that we've recieved the first update, load the models
+
+
+
+            console.log('loading all models');
+            var models = {
+                fileBase : ['IndicationArrow', 'BettingText', 'WinnerText', 'MenuSidepanel', 'Menu', 'CardBack', 'CardFront', 'PokerChip', 'PokerTable6Sided'],
+                materials: [bettingMat, bettingMat, bettingMat, menuMat, menuMat, cardBackMat, basicMat, basicMat, tableMat]
             }
-            createTable(); 
-            main();
-            theGame.syncInstance.on('value', onUpdateRecieved);  //turns out when you implement this inside the once clause
-                                                             //It'll fire with the same update that triggered this
-            
-            
-        })
-          
-          
-          
-          
-        
 
-      });
+            altspace.utilities.multiloader.init({
+                baseUrl: "assets/Models"
+            })
+            var req = new altspace.utilities.multiloader.LoadRequest();
+
+            for(var i=0; i<models.fileBase.length; i++){
+                req.objUrls.push(models.fileBase[i]+".obj");
+                req.mtlUrls.push(models.fileBase[i]+".mtl");
+            }
+
+            theGame.models = {};
+
+            altspace.utilities.multiloader.load(req, function(){
+                for(var i=0; i<req.objects.length; i++){
+
+                    console.log(req.objects[i]);
+                    req.objects[i].scale.set(300, 300, 300);
+                    for(var j=0; j<req.objects[i].children.length; j++){
+                         var group = req.objects[i].children[j];
+                         group.material = models.materials[i];
+                    }
+                    theGame.models[models.fileBase[i]] = req.objects[i];
+
+                }
+                
+                altspace.getUser().then(function(result){
+
+                        globalUserId = result.userId;
+                        globalUserName = result.displayName;    
+                    
+                        createTable(); 
+                        main();
+                        theGame.syncInstance.on('value', onUpdateRecieved);  //turns out when you implement this inside the once clause
+                                                                         //It'll fire with the same update that triggered this
+                		
+                });
+
+            })
+
+
+
+
+
+
+          });
       
       
     }, 0);
@@ -584,8 +582,8 @@ function updatePlayers(time){
   for(var i=0; i<theGame.players.length; i++){
     theGame.players[i].renderVisuals(time);
   }
-  if(theGame.betCube){
-    //theGame.betCube.updateBehaviors(time);
+  if(typeof theGame.betCube !== "undefined" && theGame.betCube.visible){
+    theGame.betCube.rotation.y += 0.005;
   }    
 
   TWEEN.update();
