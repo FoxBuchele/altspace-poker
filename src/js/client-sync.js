@@ -300,7 +300,6 @@ function processUpdates(newUpdates){
                         return b-a;
                     });
                     
-                    console.log(highestHands[handOrder[0]].players, "wins with", highestHands[handOrder[0]].hand);
                     var playerWins = [];
                     
                     /*
@@ -309,18 +308,84 @@ function processUpdates(newUpdates){
                     *   hand: hand}
                     */
                 
+                    var winners = [];
+                
+                    for(var i=0; i<handOrder.length; i++){
+                        var hand = highestHands[handOrder[i]];
+                        var subV = Object.keys(highestHands[handOrder[i]].subVals);
+                        subV.sort(function(a, b){ //sorting in reverse order
+                            return b-a;
+                        });
+                        for(var j=0; j<subV.length; j++){
+                            winners.push({
+                                players: highestHands[handOrder[i]].subVals[subV[j]].players,
+                                hand:highestHands[handOrder[i]].subVals[subV[j]].hand
+                            });
+                        }
+                    }
+                
                     var handIndex = 0;
                     for(var i=theGame.bettingPots.length-1; i>=0; i--){
                         var thisPot = theGame.bettingPots[i];
                         var splitAmount = 0;
-                        if(highestHands[handOrder[handIndex]].players.length === 1){
-                            var winningPlayer = theGame.players[highestHands[handOrder[handIndex]].players[0].spot];
+
+                        if(winners[handIndex].players.length === 1){
+                            var winningPlayer = theGame.players[winners[handIndex].players[0].spot];
                             if(winningPlayer.totalBet >= thisPot.amountToContribute){
                                 splitAmount = thisPot.amount;
                                 winningPlayer.money += splitAmount;
                                 winningPlayer.renderChips();
                                 thisPot.amount = 0;
-                                //TODO: Figure out something better to do with this
+                                
+                                playerWins.push({
+                                    player: winningPlayer,
+                                    amount: splitAmount,
+                                    hand: winners[handIndex].hand
+                                })
+                                
+                            }else{
+                                //not qualified for this hand, let's go to the next biggest hand
+                                handIndex++;
+                                i++;
+                            }
+                            
+                        }else{
+                            
+                            
+                            var thisPotAmount = thisPot.amount;
+                            
+                             //remove any players not qualified for this pot
+                            var qualifiedPlayers = winners[handIndex].players.filter(function(elem){
+                                return (theGame.players[elem.spot].totalBet >= thisPot.amountToContribute);
+                            })
+                            
+                            for(var j=0; j<qualifiedPlayers.length; j++){
+                                
+                                var winningPlayer = theGame.players[qualifiedPlayers[j].spot];
+                                splitAmount = Math.floor(thisPotAmount/qualifiedPlayers.length);
+                                winningPlayer.money += splitAmount;
+                                thisPot.amount -= splitAmount;
+                                winningPlayer.renderChips();
+
+                                playerWins.push({
+                                    player: winningPlayer,
+                                    amount: splitAmount,
+                                    hand: winners[handIndex].hand
+                                })                           
+                                
+                            
+                            }
+                            
+                        }
+                        
+                        /*
+                        if(players.length === 1){
+                            var winningPlayer = theGame.players[highestHands[handOrder[handIndex]].players[players[0]].spot];
+                            if(winningPlayer.totalBet >= thisPot.amountToContribute){
+                                splitAmount = thisPot.amount;
+                                winningPlayer.money += splitAmount;
+                                winningPlayer.renderChips();
+                                thisPot.amount = 0;
                                 
                                 playerWins.push({
                                     player: winningPlayer,
@@ -338,12 +403,12 @@ function processUpdates(newUpdates){
                             var thisPotAmount = thisPot.amount;
                             
                              //remove any players not qualified for this pot
-                            var qualifiedPlayers = highestHands[handOrder[handIndex]].players.filter(function(elem){
-                                return (theGame.players[elem.spot].totalBet >= thisPot.amountToContribute);
+                            var qualifiedPlayers = players.filter(function(elem){
+                                return (theGame.players[ highestHands[handOrder[handIndex]].players[elem].spot ].totalBet >= thisPot.amountToContribute);
                             })
                             
                             for(var j=0; j<qualifiedPlayers.length; j++){
-
+                                
                                 var winningPlayer = theGame.players[qualifiedPlayers[j].spot];
                                 splitAmount = Math.floor(thisPotAmount/qualifiedPlayers.length);
                                 winningPlayer.money += splitAmount;
@@ -358,7 +423,7 @@ function processUpdates(newUpdates){
                                 
                             
                         }
-                    }
+                    }*/
                         
                         
                     

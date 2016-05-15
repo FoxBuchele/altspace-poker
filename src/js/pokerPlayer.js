@@ -350,6 +350,9 @@ player.prototype.contributeToPot = function(amount){
             
         }else if(potSoFar >= alreadyBet){
             //this is the one we need to contribute to
+            
+            //This number is not right
+            
             var amountToRaise = (alreadyBet - potSoFar) + amount;
             if(amountToRaise < 0){
                 console.log("Should not be negative!");
@@ -395,7 +398,7 @@ player.prototype.contributeToPot = function(amount){
 
 
 player.prototype.betUpdate = function(amount){
-    var maxAmount = 0;
+   /* var maxAmount = 0;
     for(var i=0; i<theGame.players.length; i++){
         var player = theGame.players[i];
         if(player.spot !== this.spot){
@@ -406,7 +409,7 @@ player.prototype.betUpdate = function(amount){
     }
     if(amount > maxAmount){
         amount = maxAmount;
-    }
+    }*/
     
     sendUpdate({i:theGame.players.indexOf(this), amount: amount}, "playerBet");
     

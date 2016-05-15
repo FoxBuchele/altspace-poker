@@ -607,9 +607,10 @@ game.prototype.resetBetters = function(){
   this.bettingOrder = bettingOrder;
 }
 
-game.prototype.playersThatNeedToBet = function(){
+game.prototype.playersThatNeedToBet = function(fromIndex){
     var players = [];
-    for(var i=0; i<this.dealingOrder.length; i++){
+    for(var j=fromIndex; j<this.dealingOrder.length+fromIndex; j++){
+        var i = j%this.dealingOrder.length;
         if(this.dealingOrder[i].state === 2 && this.dealingOrder[i].money > 0 && this.dealingOrder[i].betThisRound < this.currentBet){
             
             players.push(i);
@@ -678,7 +679,7 @@ game.prototype.startBetting = function(){
     
   if(this.better === this.bettingOrder.length){ //&& (game.currentAuthority === globalUserId)){
     //check to see if the pot is light
-    var playersLeft = this.playersThatNeedToBet();
+    var playersLeft = this.playersThatNeedToBet(this.better);
     if(playersLeft.length != 0){
         //pot is light, make people bet that still need to
         this.bettingOrder = playersLeft;
@@ -730,7 +731,7 @@ var betStep = function(game){
 
 
 function checkForDoneBetting(){
-    if(theGame.currentAuthority === globalUserId && (theGame.better === theGame.bettingOrder.length || theGame.bettingOrder.length === 1)){
+    if(theGame.currentAuthority === globalUserId && theGame.better === theGame.bettingOrder.length){        //should calculate 'active' players
         if(theGame.logic.steps[theGame.step].execClient === betStep){
             theGame.better = 0;
             theGame.step++;
@@ -898,7 +899,7 @@ var texasHoldEm = {
                     var winningPlayer;
                     
                     var candidateOrder = game.dealingOrder.filter(function(element){
-                        return element.state === 2;
+                        return (element.state === 2);
                     });
                 
                     var winnerOrder = [];
@@ -908,30 +909,28 @@ var texasHoldEm = {
                       judgeValue.cards = getSafeCards(judgeValue);
                       if(typeof highestHand[judgeValue.value] === "undefined"){
                             var writeObj = {
-                                hand: {},
-                                players: []
+                                subVals: []
                             };
-                            writeObj.hand = judgeValue;
-                            writeObj.players.push(getSafePlayer(candidateOrder[i]));
+                            writeObj.subVals[judgeValue.subValue]= {
+                                hand: judgeValue,
+                                players:[getSafePlayer(candidateOrder[i])]
+                            };
                             highestHand[judgeValue.value] = writeObj;
                        }else{
                            
                            //see if it's actually a tie, or if someone else has a better version
                            
-                           if(highestHand[judgeValue.value].hand.subValue === judgeValue.subValue){
+                           if(typeof highestHand[judgeValue.value].subVals[judgeValue.subValue] !== "undefined"){
                                //this new hand ties
-                               highestHand[judgeValue.value].players.push(getSafePlayer(candidateOrder[i]));
-                           }else if(parseInt(highestHand[judgeValue.value].hand.subValue) < parseInt(judgeValue.subValue)){
-                               //this new hand wins
-                                var writeObj = {
-                                    hand: {},
-                                    players: []
-                                };
-                                writeObj.hand = judgeValue;
-                                writeObj.players.push(getSafePlayer(candidateOrder[i]));
-                                highestHand[judgeValue.value] = writeObj;
+                               highestHand[judgeValue.value].subVals[judgeValue.subValue].players.push(getSafePlayer(candidateOrder[i]));
                            }else{
-                               console.log("Close loss!", highestHand[judgeValue.value].hand, judgeValue);
+                                //writeObj.players.push(getSafePlayer(candidateOrder[i]));
+                                //highestHand[judgeValue.value].subVals[judgeValue.subValue]
+                                highestHand[judgeValue.value].subVals[judgeValue.subValue] = {
+                                    hand: judgeValue,
+                                    players:[getSafePlayer(candidateOrder[i])]
+                                };
+                                console.log("TossUp!", highestHand[judgeValue.value].hand, judgeValue);
                            }                   
                            
                        }
@@ -942,7 +941,7 @@ var texasHoldEm = {
                 
                     sendUpdate({hands: highestHand}, "playerWin", {thenUpdate: true});
                     
-                    var handOrder = Object.keys(highestHand).map(function(val){return parseInt(val)});
+                    /*var handOrder = Object.keys(highestHand).map(function(val){return parseInt(val)});
                     handOrder.sort(function(a, b){ //sorting in reverse order
                         return b-a;
                     });
@@ -958,7 +957,7 @@ var texasHoldEm = {
                         var winningPlayers = highestHand[handOrder[i]].players;
                         awardMoney(winningPlayers);
                         
-                    }
+                    }*/
                 
 
                     game.step = 10;
