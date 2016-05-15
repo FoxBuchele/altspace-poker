@@ -316,8 +316,6 @@ player.prototype.bet = function(amount){
   //make the current betting pot the players minimum amount
   //take the leftover, and make a new pot;
     
- 
-    
    this.contributeToPot(amount);
    this.betThisRound += amount;
    this.totalBet += amount;
@@ -397,6 +395,19 @@ player.prototype.contributeToPot = function(amount){
 
 
 player.prototype.betUpdate = function(amount){
+    var maxAmount = 0;
+    for(var i=0; i<theGame.players.length; i++){
+        var player = theGame.players[i];
+        if(player.spot !== this.spot){
+            if(player.money > maxAmount && player.state === 2){
+                maxAmount = player.money;
+            }
+        }
+    }
+    if(amount > maxAmount){
+        amount = maxAmount;
+    }
+    
     sendUpdate({i:theGame.players.indexOf(this), amount: amount}, "playerBet");
     
     

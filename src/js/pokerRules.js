@@ -419,17 +419,20 @@ mainRules.handRanking = [
 	{
 		name: "High card",
 		isHand: function(cards){
-            var highCard = -1;
-            var cardIndex;
-            for(var i=0; i<cards.length; i++){
-                if(cards[i].number > highCard){
-                    highCard = cards[i].number;
-                    cardIndex = i;
+           cards.sort(function(card1, card2){
+                if(card1.number === card2.number){
+                    return 0;
+                }else{
+                    return card1.number > card2.number;
                 }
-            }
+            });
+            cards.reverse();
+            cards = cards.slice(0, 5);
             return {
-                cards: [cards[cardIndex]],
-                subVal: cards[cardIndex].number
+                cards: cards,
+                subVal: cards.reduce(function(prev, current){
+                    return prev + current.number;
+                }, 0)
             }
 		}
 	},	
@@ -538,6 +541,7 @@ function game(){
   this.bigBlind = 10;
   this.deck = {};
   this.locked = false;
+  this.firstRefusal = false;    //whether or not we've let the big blind check yet
   this.step = -1;
   this.judge = mainRules;
   //whoever can deal cards
@@ -611,6 +615,12 @@ game.prototype.playersThatNeedToBet = function(){
             players.push(i);
             
         }
+    }
+    if(this.step === 2){
+        if(this.firstRefusal !== false && players.indexOf(this.dealingOrder.indexOf(this.firstRefusal)) === -1 && this.firstRefusal.money > 0){
+            players.push(this.dealingOrder.indexOf(this.firstRefusal));
+        }
+        this.firstRefusal = false;
     }
     return players;
 }
@@ -686,23 +696,30 @@ var betStep = function(game){
         game.resetBetters();
         game.better = 0;
         game.currentBet = 0;
-        if(game.step === 2){
-            var firstPlayer = game.dealingOrder[game.bettingOrder[game.better]];
-            var firstMoney = Math.min(firstPlayer.money, game.smallBlind);
-            game.dealingOrder[game.bettingOrder[game.better]].bet(game.smallBlind);
-            game.dealingOrder[game.bettingOrder[game.better]].renderChips();
-            game.nextBet();
-            var secondPlayer = game.dealingOrder[game.bettingOrder[game.better]];
-            var secondMoney = Math.min(secondPlayer.money, game.bigBlind);
-            game.dealingOrder[game.bettingOrder[game.better]].bet(game.bigBlind);
-            game.dealingOrder[game.bettingOrder[game.better]].renderChips();
-            displayBlindMessages(firstMoney, secondMoney, [firstPlayer, secondPlayer]);
+        
+        if(game.bettingOrder.length === 0){
             
-            game.nextBet();
+            //do nothing, wait for authority to tell us to go to the next step
             
-            makePot();
         }else{
-            game.dealingOrder[game.bettingOrder[game.better]].state = 3;
+
+            if(game.step === 2){
+                var firstPlayer = game.dealingOrder[game.bettingOrder[game.better]];
+                var firstMoney = Math.min(firstPlayer.money, game.smallBlind);
+                game.dealingOrder[game.bettingOrder[game.better]].bet(game.smallBlind);
+                game.dealingOrder[game.bettingOrder[game.better]].renderChips();
+                game.nextBet();
+                var secondPlayer = game.dealingOrder[game.bettingOrder[game.better]];
+                var secondMoney = Math.min(secondPlayer.money, game.bigBlind);
+                game.dealingOrder[game.bettingOrder[game.better]].bet(game.bigBlind);
+                game.dealingOrder[game.bettingOrder[game.better]].renderChips();
+                displayBlindMessages(firstMoney, secondMoney, [firstPlayer, secondPlayer]);
+                game.firstRefusal = secondPlayer;
+                game.nextBet();
+                makePot();
+            }else{
+                game.dealingOrder[game.bettingOrder[game.better]].state = 3;
+            }
         }
     
         //this.better === this.bettingOrder.length;
@@ -713,7 +730,7 @@ var betStep = function(game){
 
 
 function checkForDoneBetting(){
-    if(theGame.currentAuthority === globalUserId && theGame.better === theGame.bettingOrder.length && theGame.bettingOrder.length > 0){
+    if(theGame.currentAuthority === globalUserId && (theGame.better === theGame.bettingOrder.length || theGame.bettingOrder.length === 1)){
         if(theGame.logic.steps[theGame.step].execClient === betStep){
             theGame.better = 0;
             theGame.step++;
@@ -879,14 +896,15 @@ var texasHoldEm = {
         
                     var highestHand = [];
                     var winningPlayer;
-                
-                    game.resetBetters();
-                    console.log("betters are", game.bettingOrder);
                     
+                    var candidateOrder = game.dealingOrder.filter(function(element){
+                        return element.state === 2;
+                    });
+                
                     var winnerOrder = [];
                     
-                    for(var i=0; i<game.bettingOrder.length; i++){
-                      var judgeValue = game.judge.judge(game.dealingOrder[game.bettingOrder[i]].cards.concat(game.sharedCards.cards))
+                    for(var i=0; i<candidateOrder.length; i++){
+                      var judgeValue = game.judge.judge(candidateOrder[i].cards.concat(game.sharedCards.cards))
                       judgeValue.cards = getSafeCards(judgeValue);
                       if(typeof highestHand[judgeValue.value] === "undefined"){
                             var writeObj = {
@@ -894,7 +912,7 @@ var texasHoldEm = {
                                 players: []
                             };
                             writeObj.hand = judgeValue;
-                            writeObj.players.push(getSafePlayer(game.dealingOrder[game.bettingOrder[i]]));
+                            writeObj.players.push(getSafePlayer(candidateOrder[i]));
                             highestHand[judgeValue.value] = writeObj;
                        }else{
                            
@@ -902,7 +920,7 @@ var texasHoldEm = {
                            
                            if(highestHand[judgeValue.value].hand.subValue === judgeValue.subValue){
                                //this new hand ties
-                               highestHand[judgeValue.value].players.push(getSafePlayer(game.dealingOrder[game.bettingOrder[i]]));
+                               highestHand[judgeValue.value].players.push(getSafePlayer(candidateOrder[i]));
                            }else if(parseInt(highestHand[judgeValue.value].hand.subValue) < parseInt(judgeValue.subValue)){
                                //this new hand wins
                                 var writeObj = {
@@ -910,7 +928,7 @@ var texasHoldEm = {
                                     players: []
                                 };
                                 writeObj.hand = judgeValue;
-                                writeObj.players.push(getSafePlayer(game.dealingOrder[game.bettingOrder[i]]));
+                                writeObj.players.push(getSafePlayer(candidateOrder[i]));
                                 highestHand[judgeValue.value] = writeObj;
                            }else{
                                console.log("Close loss!", highestHand[judgeValue.value].hand, judgeValue);
@@ -945,7 +963,7 @@ var texasHoldEm = {
 
                     game.step = 10;
 
-                    game.runStep(); //kick out players without money, transfer control
+                   // game.runStep(); //kick out players without money, transfer control
                 
                 
 			}

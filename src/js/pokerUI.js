@@ -705,14 +705,17 @@ function addPlayer(ind){
 		if(typeof globalUserId != 'undefined'){
 			theGame.players[i].state = 0;
 			theGame.players[i].userId = globalUserId;
+            theGame.players[i].name = globalUserName;
             globalPlayerIndex = i;
 			sendUpdate({registerIndex: i, userId: globalUserId, name:globalUserName, money: theGame.players[i].money}, "registerPlayer");
 		}else{
 		
 			altspace.getUser().then(function(result){
 		        globalUserId = result.userId;
+                globalUserName = result.displayName; 
 				theGame.players[i].state = 0;
 				theGame.players[i].userId = globalUserId;
+                theGame.players[i].name = globalUserName;
                 globalPlayerIndex = i;
 				sendUpdate({registerIndex: i, userId: globalUserId, name:globalUserName, money:theGame.players[i].money}, "registerPlayer");
 			});

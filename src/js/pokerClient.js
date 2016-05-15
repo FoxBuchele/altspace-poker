@@ -120,7 +120,7 @@ function ready(firstInstance) {
     }
     
     
-    window.setTimeout(function(){
+   // window.setTimeout(function(){
 
         if(firstInstance){ 
 
@@ -198,7 +198,7 @@ function ready(firstInstance) {
           });
       
       
-    }, 0);
+   // }, 0);
 } 
 
 
@@ -351,7 +351,9 @@ function toggleCardsBehavior(pl){
 
 function makePot(){
   //make a chipstack of theChips, at thePotHolder
-  
+  for( var i = theGame.potHolder.children.length - 1; i >= 0; i--) { 
+    theGame.potHolder.remove(theGame.potHolder.children[i]);
+  }
   for(var i=0; i<theGame.bettingPots.length; i++){
       var offset = new THREE.Vector3(0, 0, i*-15);      
       //amount += theGame.bettingPots[i].amount;

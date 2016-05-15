@@ -301,56 +301,32 @@ function processUpdates(newUpdates){
                     });
                     
                     console.log(highestHands[handOrder[0]].players, "wins with", highestHands[handOrder[0]].hand);
+                    var playerWins = [];
                     
-                    var handIndex = 0;
+                    /*
+                    *   {player: theplayer,
+                    *   amount: amount,
+                    *   hand: hand}
+                    */
                 
+                    var handIndex = 0;
                     for(var i=theGame.bettingPots.length-1; i>=0; i--){
                         var thisPot = theGame.bettingPots[i];
-                        var sendingMessages = [];
+                        var splitAmount = 0;
                         if(highestHands[handOrder[handIndex]].players.length === 1){
                             var winningPlayer = theGame.players[highestHands[handOrder[handIndex]].players[0].spot];
                             if(winningPlayer.totalBet >= thisPot.amountToContribute){
-                                winningPlayer.money += thisPot.amount;
-                                
+                                splitAmount = thisPot.amount;
+                                winningPlayer.money += splitAmount;
+                                winningPlayer.renderChips();
+                                thisPot.amount = 0;
                                 //TODO: Figure out something better to do with this
                                 
-                                var handObj = winningPlayer.hand;
-                                    var pos = new THREE.Vector3();
-                                    pos.copy(handObj.position);
-
-                                var forwardDirection = new THREE.Vector3();
-                                    forwardDirection.copy(handObj.userData.forward);
-                                    forwardDirection.multiplyScalar(-100);
-                                    pos.add(forwardDirection);
-                                    pos.y += 25;
-                                
-                                var message = winningPlayer.name+" won "+thisPot.amount+" with "+highestHands[handOrder[handIndex]].hand.name+"!";
-                                sendingMessages.push({
-                                        timeToDisappear: 5000,
-                                        messageType: 2,
-                                        message: message,
-                                        messagePos: pos,
-                                        messageRot: handObj.quaternion
-                                });
-                                
-                                
-                                var cardMessage = "";
-                                for(var j=0; j<highestHands[handOrder[handIndex]].hand.cards.length; j++){
-                                    if(j !== 0){
-                                        cardMessage += ", ";
-                                    }
-                                    cardMessage += card.prototype.friendlyRepresentation.apply(highestHands[handOrder[handIndex]].hand.cards[j]);
-                                }
-                                var pos2 = new THREE.Vector3();
-                                pos2.copy(pos);
-                                pos2.y += 50;
-                                sendingMessages.push({
-                                    timeToDisappear: 8000,
-                                    messageType: 3,
-                                    message: cardMessage,
-                                    messagePos: pos2,
-                                    messageRot: handObj.quaternion
-                                });
+                                playerWins.push({
+                                    player: winningPlayer,
+                                    amount: splitAmount,
+                                    hand: highestHands[handOrder[handIndex]].hand
+                                })
                                 
                             }else{
                                 //not qualified for this hand, let's go to the next biggest hand
@@ -359,14 +335,57 @@ function processUpdates(newUpdates){
                             }
                             
                         }else{
+                            var thisPotAmount = thisPot.amount;
                             
-                            for(var j=0; j<theGame.players[highestHands[handOrder[handIndex]]].players.length; j++){
+                             //remove any players not qualified for this pot
+                            var qualifiedPlayers = highestHands[handOrder[handIndex]].players.filter(function(elem){
+                                return (theGame.players[elem.spot].totalBet >= thisPot.amountToContribute);
+                            })
+                            
+                            for(var j=0; j<qualifiedPlayers.length; j++){
 
-                                var winningPlayer = theGame.players[highestHands[handOrder[handIndex]]].players[j];
-                                winningPlayer.money += thisPot.amount/theGame.players[highestHands[handOrder[handIndex]]].players.length;
+                                var winningPlayer = theGame.players[qualifiedPlayers[j].spot];
+                                splitAmount = Math.floor(thisPotAmount/qualifiedPlayers.length);
+                                winningPlayer.money += splitAmount;
+                                thisPot.amount -= splitAmount;
+                                winningPlayer.renderChips();
 
-                                                           
-                                var handObj = winningPlayer.hand;
+                                playerWins.push({
+                                    player: winningPlayer,
+                                    amount: splitAmount,
+                                    hand: highestHands[handOrder[handIndex]].hand
+                                })                           
+                                
+                            
+                        }
+                    }
+                        
+                        
+                    
+                }
+                
+                 var sendingMessages = [];
+                        
+                    for(var i=0; i<playerWins.length; i++){
+                        
+                            //go through the rest of the playerWins array
+                            //merge any duplicates
+                            //credit the highest hand
+                        
+                            for(var j=i+1; j<playerWins.length;j++){
+                                if(playerWins[i].player.spot === playerWins[j].player.spot){
+                                    playerWins[i].amount += playerWins[j].amount
+                                    if(playerWins[j].hand.value > playerWins[i].hand.value || (playerWins[j].hand.value === playerWins[i].hand.value && playerWins[j].hand.subValue > playerWins[i].hand.subValue)){
+                                        playerWins[i].hand = playerWins[j].hand;
+                                    }
+                                    playerWins.splice(j--, 1);
+                                }
+                            }
+                                
+                                var winningPlayer = playerWins[i].player;
+                                var splitAmount = playerWins[i].amount;
+                        
+                                var handObj = playerWins[i].player.hand;
                                     var pos = new THREE.Vector3();
                                     pos.copy(handObj.position);
 
@@ -375,10 +394,15 @@ function processUpdates(newUpdates){
                                     forwardDirection.multiplyScalar(-100);
                                     pos.add(forwardDirection);
                                     pos.y += 25;
+                                if(playerWins.length === 1){
+                                  var message = winningPlayer.name+" won $"+splitAmount+" with "+playerWins[i].hand.name+"!";
+                                }else{
+                                   var message = winningPlayer.name+" split the pot for $"+splitAmount+" with "+playerWins[i].hand.name+"!";
+                                }
                                 
-                                var message = winningPlayer.name+" won "+thisPot.amount+" with "+highestHands[handOrder[handIndex]].hand.name+"!";
-                                 sendingMessages.push({
-                                        timeToDisappear: 5000,
+                        
+                                sendingMessages.push({
+                                        timeToDisappear: 6000,
                                         messageType: 2,
                                         message: message,
                                         messagePos: pos,
@@ -387,29 +411,32 @@ function processUpdates(newUpdates){
                                 
                                 
                                 var cardMessage = "";
-                                for(var j=0; j<highestHands[handOrder[handIndex]].hand.cards.length; j++){
-                                    if(j !== 0){
+                                for(var k=0; k<playerWins[i].hand.cards.length; k++){
+                                    if(k !== 0){
                                         cardMessage += ", ";
                                     }
-                                    cardMessage += card.prototype.friendlyRepresentation.apply(highestHands[handOrder[handIndex]].hand.cards[j]);
+                                    cardMessage += card.prototype.friendlyRepresentation.apply(playerWins[i].hand.cards[k]);
                                 }
                                 var pos2 = new THREE.Vector3();
                                 pos2.copy(pos);
                                 pos2.y += 50;
                                 sendingMessages.push({
-                                    timeToDisappear: 8000,
+                                    timeToDisappear: 6000,
                                     messageType: 3,
                                     message: cardMessage,
                                     messagePos: pos2,
                                     messageRot: handObj.quaternion
                                 });
-                            
-                            
-                        }
-                    }
                         
+                    }
+                    
+                
+                //condense any straggler chips to one pot
+                        
+                    makePot();
+                    theGame.step = 9;
                     displayMessage(sendingMessages);
-                }
+                
             
                     
                 
@@ -482,8 +509,6 @@ function processUpdates(newUpdates){
                     }, 5000);
                     
                     
-                }else{
-                    location.reload();
                 }
                 break;
             default:
