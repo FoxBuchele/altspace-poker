@@ -691,6 +691,74 @@ game.prototype.startBetting = function(){
   }
 }
 
+game.prototype.nextHand = function(){
+    //reset the round record
+    //send out new update
+    
+    this.roundRecord = [{title: "startedLevel", timestamp: Date.now()}];
+    cutoffTime = this.roundRecord[0].timestamp;
+
+    //register players
+
+    for(var i=0; i<this.players.length; i++){
+
+        if(this.players[i].state > -1){
+            this.players[i].state = 0;
+            this.roundRecord.push({data:{registerIndex: i, userId: this.players[i].userId, money: this.players[i].money, name: this.players[i].name}, timestamp: Date.now(), title: "registerPlayer"});
+        }
+
+    }
+    
+    for(var i=0; i<this.players.length; i++){
+        if(this.players[i].state === 0){    //they're  waiting
+          this.players[i].state = 2;
+        }
+    }
+    this.resetDealers();
+    this.bettingPots = [];
+    this.bettingPots.push(new pot());
+    this.deck.shuffle();
+    sendUpdate({authority:globalUserId, deck: getSafeCards({cards: this.deck.shuffledDeck}), dealer: this.dealer},"startHand");
+
+    //this.deck.shuffle();
+    authority = globalUserId;
+    //create a new round record, send it to everyone
+
+    //start level
+    setTimeout((function(tehGame){
+        tehGame.start();
+    })(this), 5000);
+    
+    
+}
+
+game.prototype.winGame = function(pI){
+    var player = this.players[pI];
+    var messages = [];
+    
+    winMessage = player.name + " wins the tournament!";
+    var handObj = playerWins[i].player.hand;
+    var playerPos = new THREE.Vector3();
+    pos.copy(handObj.position);
+    
+    messages.push({
+        timeToDisappear: 10000,
+        messageType: 3,
+        message: winMessage,
+        messagePos: playerPos,
+        messageRot: handObj.quaternion
+    });
+    
+    //now set all the players back to -1
+    for(var i=0; i<this.players.length; i++){
+        this.players[i].state = -1;
+    }
+    cutoffTime = Date.now();
+    this.roundRecord = [this.roundRecord[0]];
+    
+    displayMessage(messages);
+}
+
 var betStep = function(game){
         toggleVisible(game.betCube, true);// game.betCube.visible = true;
         game.resetDealers();
@@ -731,18 +799,25 @@ var betStep = function(game){
 
 
 function checkForDoneBetting(){
-    if(theGame.currentAuthority === globalUserId && theGame.better === theGame.bettingOrder.length){        //should calculate 'active' players
-        if(theGame.logic.steps[theGame.step].execClient === betStep){
-            theGame.better = 0;
-            theGame.step++;
-            theGame.runStep();
-        }
-    }
+    _checkForDoneBetting();
     
     setTimeout(checkForDoneBetting, 1000);
     
 }
 
+function _checkForDoneBetting(){
+    if(theGame.better === theGame.bettingOrder.length){        //should calculate 'active' players
+        if(theGame.step !== -1 && theGame.logic.steps[theGame.step].execClient === betStep){
+            if(theGame.currentAuthority === globalUserId){
+                theGame.better = 0;
+                theGame.step++;
+                theGame.runStep();
+            }
+            return true;
+        }
+    }
+    return false;
+}
             
 
 
@@ -962,7 +1037,7 @@ var texasHoldEm = {
 
                     game.step = 10;
 
-                   // game.runStep(); //kick out players without money, transfer control
+                    game.runStep(); //kick out players without money, transfer control
                 
                 
 			}
@@ -978,7 +1053,7 @@ var texasHoldEm = {
             for(var i=0; i<game.dealingOrder.length; i++){
               //go through every player, if they have no money, they need to leave
               //broke-ass punks
-
+                
               if(game.dealingOrder[i].money === 0 && game.dealingOrder[i].state !== -1){
                 if(!game.locked){
                     game.dealingOrder[i].state = -1;
@@ -994,13 +1069,22 @@ var texasHoldEm = {
             var playerStates = [];
             for(var i=0; i<game.players.length; i++){
                // game.players[i].cards = [];
+                game.players[i].totalBet = 0;
+                game.players[i].betThisRound = 0;
                 playerStates.push(getSafePlayer(game.players[i]));
+
             }
             
             game.rotateDealers();
+            game.resetCards();
+            setTimeout(function(){
+                 game.nextHand();
+            }, 5000);
+           
+            //cutoffTime = Date.now();
+            //sendUpdate({transferControl: game.dealingOrder[game.dealer].spot, endstatePlayers: playerStates}, "transferControl", {thenUpdate: true});
             
-            sendUpdate({transferControl: game.dealingOrder[game.dealer].spot, endstatePlayers: playerStates}, "transferControl", {thenUpdate: true});
-          
+
     
         }
     }

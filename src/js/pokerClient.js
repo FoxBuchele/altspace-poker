@@ -595,7 +595,7 @@ function updatePlayers(time){
 function main(){
     
 	theGame.logic = texasHoldEm;
-    checkForDoneBetting();
+    setTimeout(checkForDoneBetting, 1000);
     //render first set of visuals
     updatePlayers(0);
     

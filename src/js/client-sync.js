@@ -96,8 +96,10 @@ function processUpdates(newUpdates){
         theGame.roundRecord.push(newUpdates[x]);
         switch(updateType){
             case "startedLevel":
-                
+
                 cutoffTime = newUpdates[x].timestamp;
+                theGame.roundRecord = [];
+                theGame.roundRecord.push(newUpdates[x]);
                 
                 
                 break;
@@ -180,6 +182,8 @@ function processUpdates(newUpdates){
                     if(theGame.players[i].state === 0){    //they're  waiting
                       theGame.players[i].state = 2;
                     }
+                    theGame.players[i].betThisRound = 0;
+                    theGame.players[i].totalBet = 0;
                     theGame.players[i].cards = [];
                   }
                 theGame.resetDealers();
@@ -187,6 +191,19 @@ function processUpdates(newUpdates){
                 theGame.bettingPots.push(new pot());
                 //theGame.step = 1;
                 theGame.dealer = data.dealer;
+                
+                var words = theGame.players[theGame.dealer].name + " dealt a new hand!";
+                var pos = new THREE.Vector3();
+                pos.copy(theGame.players[theGame.dealer].hand.position);
+                var rot = theGame.players[theGame.dealer].hand.quaternion;
+                
+                var handMessage = new errorMessage({
+                    timeToDisappear: 2000,
+                    messageType: 1,
+                    message: words,
+                    pos: pos,
+                    rot: rot
+                }); 
                // theGame.runClientStep();
                 
                 break;
@@ -258,7 +275,7 @@ function processUpdates(newUpdates){
             case "playerWinByForfeit":
                     
                 var thisPlayer = theGame.players[data.winnerByForfeit.spot];
-                
+                theGame.resetCards();
                     toggleVisible(theGame.winCube, false);
                     toggleVisible(theGame.betCube, false);
 
@@ -536,42 +553,7 @@ function processUpdates(newUpdates){
                     //we are now the dealer!
                     //apply the money and spots from the previous dealer
                     
-                    theGame.roundRecord = [{title: "startedLevel", timestamp: Date.now()}];
-                    cutoffTime = theGame.roundRecord[0].timestamp;
-
-                    //lets wait 5 seconds before moving on
-                    //register players
-
-                    for(var i=0; i<theGame.players.length; i++){
-
-                        if(theGame.players[i].state > -1){
-                            theGame.players[i].state = 0;
-                            theGame.roundRecord.push({data:{registerIndex: i, userId: theGame.players[i].userId, money: theGame.players[i].money, name: theGame.players[i].name}, timestamp: Date.now(), title: "registerPlayer"});
-                        }
-
-
-
-                    }
-                    
-                    for(var i=0; i<theGame.players.length; i++){
-                        if(theGame.players[i].state === 0){    //they're  waiting
-                          theGame.players[i].state = 2;
-                        }
-                    }
-                    theGame.resetDealers();
-                    theGame.bettingPots = [];
-                    theGame.bettingPots.push(new pot());
-                    theGame.deck.shuffle();
-                    sendUpdate({authority:globalUserId, deck: getSafeCards({cards: theGame.deck.shuffledDeck}), dealer: theGame.dealer},"startHand");
-
-                    //theGame.deck.shuffle();
-                    authority = globalUserId;
-                    //create a new round record, send it to everyone
-                    
-                    //start level
-                    setTimeout(function(){
-                        theGame.start();
-                    }, 5000);
+                    theGame.nextHand();
                     
                     
                 }

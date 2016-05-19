@@ -81,7 +81,10 @@ player.prototype.renderVisuals = function(timeSince){
             this.money = startingMoney;  
         }
         if(this.spot === 1){
-            this.money = 50;
+            this.money = 25;
+        }
+        if(this.spot === 2){
+            this.money = 50;   
         }
         toggleVisible(this.hand, true);
         toggleVisible(this.joinButton.mesh, true);
@@ -330,6 +333,7 @@ player.prototype.contributeToPot = function(amount){
   
   var alreadyBet = this.totalBet;
   var potSoFar = 0;
+  var amountToSatisfy;
   for(var i=theGame.bettingPots.length-1; i>=0; i--){
         if(amount < 0){
             debugger;
@@ -341,7 +345,7 @@ player.prototype.contributeToPot = function(amount){
         potSoFar += theGame.bettingPots[i].amountToContribute;
         if(thisPot.locked === true){
             
-            var amountToSatisfy = potSoFar - alreadyBet;
+            amountToSatisfy = potSoFar - alreadyBet;
             if(amountToSatisfy > 0){
                 thisPot.amount += amountToSatisfy;
                 alreadyBet += amountToSatisfy;
@@ -354,6 +358,7 @@ player.prototype.contributeToPot = function(amount){
             //This number is not right
             
             var amountToRaise = (alreadyBet - potSoFar) + amount;
+            amountToSatisfy = amount - amountToRaise;
             if(amountToRaise < 0){
                 console.log("Should not be negative!");
               
@@ -364,24 +369,29 @@ player.prototype.contributeToPot = function(amount){
              var lowestPlayer = false;
               for(var j=0; j<theGame.players.length; j++){
                   var player = theGame.players[j];
-                  if(player.state > 0 && player.state < 4 && player.money > potSoFar){
+                  if(player.state > 0 && player.state < 4 && (player.money + player.totalBet) > potSoFar){
                       //in the round still
-                      if(player.money < amount){    //they have less than this person is trying to bet
-                         lowestPlayer = player;
-                      }
+                      if(player.money < amountToRaise){    //they have less than this person is trying to raise
+                        if(lowestPlayer !== false && lowestPlayer.money < player.money){
+                           //do nothing
+                        }else{ 
+                            lowestPlayer = player;
+                        }
+                    }
+                           
                   }
               }
             
             if(lowestPlayer !== false){
              
-                var minBet = lowestPlayer.money;
-                thisPot.amount += minBet;
+                var minBet = potSoFar - lowestPlayer.totalBet + lowestPlayer.money;
+                thisPot.amount += minBet + amountToSatisfy;
                 thisPot.amountToContribute += minBet;
                 potSoFar += minBet;
-                alreadyBet += minBet;
+                alreadyBet += minBet + amountToSatisfy;
                 theGame.newPot();
                 i++;
-                amount -= minBet;
+                amount -= (minBet + amountToSatisfy);
 
             }else{
                 thisPot.amount += amount;
@@ -448,12 +458,18 @@ player.prototype.fold = function(){
                     theGame.better = 0;
                     theGame.step = 10;
                     if(theGame.currentAuthority === globalUserId){
-                        sendUpdate({winnerByForfeit: getSafePlayer(potentialPlayers[0])}, "playerWinByForfeit", {thenUpdate: true});
-                        theGame.runStep();
+                        setTimeout(function(){
+                             sendUpdate({winnerByForfeit: getSafePlayer(potentialPlayers[0])}, "playerWinByForfeit", {thenUpdate: true});
+                             theGame.runStep();
+                        }, 0);
                     }
                       
                 }else{
-                    theGame.nextBet();
+                    if(_checkForDoneBetting()){
+                        //do nothing, wait for authority to tell us what to do next
+                    }else{
+                        theGame.nextBet();
+                    }
                 } 
   
     

@@ -780,7 +780,7 @@ function startGame(player){
       
          console.log(pl);
           return (allowed && (numActivePlayers() >= 2));
-      
+        //return true;
   }
   
   function startGame(){
