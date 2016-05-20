@@ -601,8 +601,10 @@ game.prototype.resetBetters = function(){
       bettingOrder.push(i);
     }
   }
-  for(var i=0; i<this.dealer; i++){
-      bettingOrder.push(bettingOrder.shift());
+  if(bettingOrder.length > 1){  //if there's only one person to bet, don't need to shift the array
+      for(var i=0; i<this.dealer; i++){
+          bettingOrder.push(bettingOrder.shift());
+      }
   }
   this.bettingOrder = bettingOrder;
 }
@@ -732,6 +734,10 @@ game.prototype.nextHand = function(){
     
 }
 
+game.prototype.winGame = function(index){
+    sendUpdate({index: index, name:theGame.players[index].name},"totalVictory", {thenUpdate:true});
+}
+/*
 game.prototype.winGame = function(pI){
     var player = this.players[pI];
     var messages = [];
@@ -757,7 +763,7 @@ game.prototype.winGame = function(pI){
     this.roundRecord = [this.roundRecord[0]];
     
     displayMessage(messages);
-}
+}*/
 
 var betStep = function(game){
         toggleVisible(game.betCube, true);// game.betCube.visible = true;
@@ -943,8 +949,10 @@ var texasHoldEm = {
                        toPlayerTween.onUpdate((function(card){
                           return function(value1){
                               //move the cards to the player
-                            card.geom.position.copy(card.movementTween.position);
-                          }
+                            if(card.geom){
+                                card.geom.position.copy(card.movementTween.position);
+                            }
+                        }
                         }(game.sharedCards.cards[4])));
                        toPlayerTween.start();
                 game.step = 8;
@@ -1050,35 +1058,45 @@ var texasHoldEm = {
       exec: function(game){
         
         
-            for(var i=0; i<game.dealingOrder.length; i++){
-              //go through every player, if they have no money, they need to leave
-              //broke-ass punks
-                
-              if(game.dealingOrder[i].money === 0 && game.dealingOrder[i].state !== -1){
-                if(!game.locked){
-                    game.dealingOrder[i].state = -1;
-                }else{
-                    game.dealingOrder[i].state = -3;
-                }
-                if(i === game.dealer){
-                    game.dealer--;  //if this person folds out, pretend like the person right before them was the dealer when we rotate
-                }
-              }
-            }
             
-            var playerStates = [];
-            for(var i=0; i<game.players.length; i++){
-               // game.players[i].cards = [];
-                game.players[i].totalBet = 0;
-                game.players[i].betThisRound = 0;
-                playerStates.push(getSafePlayer(game.players[i]));
-
-            }
-            
-            game.rotateDealers();
-            game.resetCards();
             setTimeout(function(){
-                 game.nextHand();
+                var activePlayers = 0;
+                var activeIndex = -1;
+                game.resetCards();
+                
+                
+                for(var i=0; i<game.dealingOrder.length; i++){
+                  //go through every player, if they have no money, they need to leave
+                  //broke-ass punks
+
+                  if(game.dealingOrder[i].money === 0 && game.dealingOrder[i].state !== -1){
+                    game.dealingOrder[i].state = -3;
+
+                    if(i === game.dealer){
+                        game.dealer--;  //if this person folds out, pretend like the person right before them was the dealer when we rotate
+                    }
+                  }
+                }
+                for(var i=0; i<game.players.length; i++){
+                   if(game.players[i].state > 0){
+                       activePlayers++;
+                       activeIndex = i;
+                   }
+                   game.players[i].totalBet = 0;
+                   game.players[i].betThisRound = 0;
+                }
+                game.rotateDealers();
+
+
+
+                
+                
+                
+                if(activePlayers > 1){
+                    game.nextHand();
+                }else{
+                    game.winGame(activeIndex);
+                }
             }, 5000);
            
             //cutoffTime = Date.now();

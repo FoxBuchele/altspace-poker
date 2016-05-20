@@ -1,7 +1,7 @@
 svg{
 
   position: fixed;
-  top: 200px;
+  top: 100px;
   left: 0;
   font: bold 50px 'Arial';
   width: 100%;
@@ -25,4 +25,21 @@ svg text.title{
 }
 svg text.gamePhase{
   display: none;
+}
+#newGameButton.visible{
+    display: block;
+}
+
+#newGameButton{
+    display: none;
+    
+    width: 300px;
+    height: 150px;
+    position: fixed;
+    top: 250px;
+    left: calc(50% - 150px);
+    font-size: 32px;
+    color: white;
+    background-color: black;
+    border-radius: 25px;
 }

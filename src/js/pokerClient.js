@@ -14,6 +14,10 @@ altspace.utilities.sync.connect({
         authorId: "Fox",
     instanceId: null
 }).then(function(connection){
+    if (location.href.indexOf('altspace-sync-instance') === -1) {
+        console.log('waiting for refresh');
+        return;
+    }
     instanceBase = connection.instance;
    console.log('we have the instance');
    sceneSync = altspace.utilities.behaviors.SceneSync(instanceBase, {
@@ -696,15 +700,14 @@ function cardToDeck(card){
                       geom.position.copy(movementTween.position);
                   } 
                 }(geom, movementTween)));
-                posToDeck.onComplete((function(geom){
-                  return function(t){
+               setTimeout(function(){
                       if(geom.parent.type === "Object3D"){ 
                         THREE.SceneUtils.detach(geom, geom.parent, sim.scene);
                         geom.updateMatrixWorld();
                       }
                       geom.parent.remove(geom); 
-                  } 
-                }(geom)));
+                
+                }, 1200);
                 var rotToDeck = new TWEEN.Tween(movementTween.rotation).to({x:Math.PI/2, y:0, z:0}, 500);
                 rotToDeck.onUpdate((function(geom, movementTween){
                   return function(t){

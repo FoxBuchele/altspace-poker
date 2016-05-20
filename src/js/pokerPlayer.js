@@ -38,7 +38,7 @@ player.prototype.renderVisuals = function(timeSince){
         //spot is locked
         //hide everything
         toggleVisible(this.bettingui.mesh, false);    
-        toggleVisible(this.optionsui.mesh, false);
+        //toggleVisible(this.optionsui.mesh, false);
         toggleVisible(this.hand, false);
         toggleVisible(this.joinButton.mesh, false);
             

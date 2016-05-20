@@ -305,6 +305,53 @@ function processUpdates(newUpdates){
                     theGame.bettingPots = [];
                                     
                 break;
+            case "totalVictory":
+                var player = theGame.players[data.index];
+                var name = data.name;
+                
+                
+                    var handObj = player.hand;
+                        var pos = new THREE.Vector3();
+                        pos.copy(handObj.position);
+
+                    var forwardDirection = new THREE.Vector3();
+                        forwardDirection.copy(handObj.userData.forward);
+                        forwardDirection.multiplyScalar(100);
+                        pos.add(forwardDirection);
+                        pos.y += 180;
+                
+                
+                    var message = name+" won the tournament!";
+                        var winMessage = new errorMessage({
+                                timeToDisappear: 15000,
+                                messageType: 2,
+                                message: message,
+                                pos: pos,
+                                rot: handObj.quaternion,
+                                scale: 2,
+                        });
+                
+                //set every spot state to -3
+                //disable the lock mechanism
+                //keep refresh button
+                
+                for(var i=0; i<theGame.players.length; i++){
+                    theGame.players[i].state = -3;
+                    toggleVisible(theGame.players[i].optionsui.mesh, true);
+                    toggleVisible(theGame.players[i].optionsui.lockButton, false);
+                    toggleVisible(theGame.players[i].optionsui.refreshButton, true);
+                }
+                toggleVisible(theGame.startGameButton, false);
+                setTimeout(function(){
+                    theGame.resetCards();
+                    document.querySelector("svg .winner").textContent = "Congratulations "+name+"!";
+                    document.querySelector("svg .winner").style.display = "block";
+                    document.querySelector("#newGameButton").classList.add("visible");
+                    
+                }, 5000)
+                
+                
+                break;
             case "playerWin":
                 
                 
@@ -518,7 +565,7 @@ function processUpdates(newUpdates){
                     makePot();
                     theGame.step = 9;
                     displayMessage(sendingMessages);
-                
+                    //theGame.resetCards();
             
                     
                 

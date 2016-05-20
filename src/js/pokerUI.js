@@ -287,6 +287,7 @@ function optionsUI(player){
     lockButton.position.z += 10;
     lockButton.rotation.z = Math.PI/2;
     slideOutContainer.add(lockButton);
+    this.lockButton = lockButton;
     /*
     var unlockButton = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), unlockMaterial);
     unlockButton.position.x += 85;
@@ -301,6 +302,7 @@ function optionsUI(player){
     refreshButton.position.z += 80;
     refreshButton.rotation.x = -Math.PI/5;
     this.mesh.add(refreshButton);
+    this.refreshButton = refreshButton;
     
     refreshButton.addBehaviors({
         awake: function(obj){
