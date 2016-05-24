@@ -172,9 +172,22 @@ function processUpdates(newUpdates){
                 //theGame.currentAuthority = data.authority;
                 authority = data.authority;
                 theGame.resetCards();
-
                 
-                
+                if(data.blind !== theGame.smallBlind){
+                    theGame.smallBlind = data.blind;
+                    theGame.timeBlindStarted = data.blindStartTime;
+                    //display message notifying that the blinds went up
+                   displayMessageSingle({
+                        message: "Blinds are now $"+theGame.smallBlind+" and $"+(theGame.smallBlind*2)+"!",
+                        messageType: 3,
+                        messagePos: new THREE.Vector3(0, -20, 0),
+                        messageRot: new THREE.Quaternion(),
+                        moveDirection: new THREE.Vector3(0, 0, 0),
+                        scale: new THREE.Vector3(1, 1, 1),
+                        arrowSide: "down",
+                        timeToDisappear: 4000,
+                    })
+                }
                 
                 
                 theGame.deck.arrange(data.deck);
@@ -192,6 +205,7 @@ function processUpdates(newUpdates){
                 //theGame.step = 1;
                 theGame.dealer = data.dealer;
                 
+                /*
                 var words = theGame.players[theGame.dealer].name + " dealt a new hand!";
                 var pos = new THREE.Vector3();
                 pos.copy(theGame.players[theGame.dealer].hand.position);
@@ -203,7 +217,7 @@ function processUpdates(newUpdates){
                     message: words,
                     pos: pos,
                     rot: rot
-                }); 
+                });*/ 
                // theGame.runClientStep();
                 
                 break;

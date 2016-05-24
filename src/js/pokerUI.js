@@ -446,7 +446,7 @@ function bettingUI(player){
 
       this.countMesh = new THREE.Mesh(new THREE.PlaneGeometry(this.element.width/4, this.element.height/4), this.material);
       this.countMesh.position.y += 18;
-      this.countMesh.position.z -= 4;
+      this.countMesh.position.z -= 4.5;
       //this.backMesh = new THREE.Mesh(new THREE.PlaneGeometry(this.element.width/4, this.element.height/4), this.material);
       //this.backMesh.rotation.set(0, Math.PI, 0);
       //this.backMesh.position.z -= 0.1;
@@ -795,6 +795,7 @@ function startGame(player){
         theGame.dealer = theGame.dealingOrder.indexOf(pl);
         theGame.rotateDealers();
         theGame.step = 0;//do the initialization in the game controller
+        theGame.timeBlindStarted = Date.now();
         //sendUpdate({stepUpdate: 0}, "startGame");
         theGame.runStep();
       }

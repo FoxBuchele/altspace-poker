@@ -524,10 +524,10 @@ function isStraight(cards){
 	return false;
 }
 
-function pot(){
+function pot(startingAmount){
     this.amountToContribute = 0;
     this.locked = false;
-    this.amount = 0;
+    this.amount = startingAmount || 0;
 }
 
 
@@ -538,7 +538,6 @@ function game(){
   this.dealer = 0;
   this.better = 0;
   this.smallBlind = 5;
-  this.bigBlind = 10;
   this.deck = {};
   this.locked = false;
   this.firstRefusal = false;    //whether or not we've let the big blind check yet
@@ -546,6 +545,8 @@ function game(){
   this.judge = mainRules;
   //whoever can deal cards
   this.currentAuthority;
+  this.timeBetweenBlinds = 600000;//10 minutes for game 60000; //1 minute for testing
+  this.timeBlindStarted = 0;
   
   this.sharedCards = {
     cards:[]
@@ -717,10 +718,32 @@ game.prototype.nextHand = function(){
         }
     }
     this.resetDealers();
+    
+    //consolidate straggler chips in these pots
+    //into one new pot
+    
     this.bettingPots = [];
     this.bettingPots.push(new pot());
     this.deck.shuffle();
-    sendUpdate({authority:globalUserId, deck: getSafeCards({cards: this.deck.shuffledDeck}), dealer: this.dealer},"startHand");
+    
+    if(Date.now() > this.timeBlindStarted + this.timeBetweenBlinds){
+        this.smallBlind *= 2;
+        this.timeBlindStarted = Date.now();
+        
+        displayMessageSingle({
+                        message: "Blinds are now $"+theGame.smallBlind+" and $"+(theGame.smallBlind*2)+"!",
+                        messageType: 3,
+                        messagePos: new THREE.Vector3(0, -20, 0),
+                        messageRot: new THREE.Quaternion(),
+                        moveDirection: new THREE.Vector3(0, 0, 0),
+                        scale: new THREE.Vector3(1, 1, 1),
+                        arrowSide: "down",
+                        timeToDisappear: 4000,
+                    })
+        
+    }
+    
+    sendUpdate({authority:globalUserId, deck: getSafeCards({cards: this.deck.shuffledDeck}), dealer: this.dealer, blind: this.smallBlind, blindStartTime: this.timeBlindStarted},"startHand");
 
     //this.deck.shuffle();
     authority = globalUserId;
@@ -781,14 +804,15 @@ var betStep = function(game){
             if(game.step === 2){
                 var firstPlayer = game.dealingOrder[game.bettingOrder[game.better]];
                 var firstMoney = Math.min(firstPlayer.money, game.smallBlind);
-                game.dealingOrder[game.bettingOrder[game.better]].bet(game.smallBlind);
+                game.dealingOrder[game.bettingOrder[game.better]].bet(firstMoney);
                 game.dealingOrder[game.bettingOrder[game.better]].renderChips();
                 game.nextBet();
                 var secondPlayer = game.dealingOrder[game.bettingOrder[game.better]];
-                var secondMoney = Math.min(secondPlayer.money, game.bigBlind);
-                game.dealingOrder[game.bettingOrder[game.better]].bet(game.bigBlind);
+                var secondMoney = Math.min(secondPlayer.money, game.smallBlind * 2);
+                game.dealingOrder[game.bettingOrder[game.better]].bet(secondMoney);
                 game.dealingOrder[game.bettingOrder[game.better]].renderChips();
                 displayBlindMessages(firstMoney, secondMoney, [firstPlayer, secondPlayer]);
+                game.currentBet = game.smallBlind * 2;
                 game.firstRefusal = secondPlayer;
                 game.nextBet();
                 makePot();
@@ -841,7 +865,7 @@ var texasHoldEm = {
         //game.dealer = 0;
         game.deck.shuffle();
         game.currentAuthority = globalUserId;
-        sendUpdate({authority:globalUserId, dealer: game.dealer, deck: getSafeCards({cards: game.deck.shuffledDeck})}, "startHand");
+        sendUpdate({authority:globalUserId, dealer: game.dealer, deck: getSafeCards({cards: game.deck.shuffledDeck}), blind: game.smallBlind, blindStartTime: game.timeBlindStarted}, "startHand");
         game.start();
         //since only the dealer will do this step, we can assume the globalUserId is the dealer
         
