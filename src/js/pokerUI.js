@@ -326,7 +326,7 @@ function optionsUI(player){
                 console.log('clicked!');
                 theGame.locked = !theGame.locked;
                 var pos = new THREE.Vector3();
-                pos.copy(obj.localToWorld(new THREE.Vector3(0, 20, 0)));
+                pos.copy(obj.localToWorld(new THREE.Vector3(0, 60, 0)));
                 var quat = obj.getWorldQuaternion();
                 
                 if(theGame.locked){
@@ -374,11 +374,13 @@ var refreshImg = document.createElement('img');
     refreshImg.src = "assets/refresh.png";
     refreshImg.threeTex = new THREE.Texture(refreshImg);
 var refreshMaterial = new THREE.MeshBasicMaterial({map:refreshImg.threeTex});
+    refreshMaterial.transparent = true;
 
 var lockImg = document.createElement('img');
     lockImg.src = "assets/lock.png";
     lockImg.threeTex = new THREE.Texture(lockImg);
 var lockMaterial = new THREE.MeshBasicMaterial({map:lockImg.threeTex});
+    lockMaterial.transparent = true;
 
 var plusImg = document.createElement('img');
 plusImg.src = "assets/plus.png";
@@ -444,7 +446,7 @@ function bettingUI(player){
 
       this.countMesh = new THREE.Mesh(new THREE.PlaneGeometry(this.element.width/4, this.element.height/4), this.material);
       this.countMesh.position.y += 18;
-      this.countMesh.position.z -= 1.6;
+      this.countMesh.position.z -= 4;
       //this.backMesh = new THREE.Mesh(new THREE.PlaneGeometry(this.element.width/4, this.element.height/4), this.material);
       //this.backMesh.rotation.set(0, Math.PI, 0);
       //this.backMesh.position.z -= 0.1;
@@ -539,7 +541,7 @@ function bettingUI(player){
 }
 
 bettingUI.prototype.updateBet = function(amount){ 
-       this.textArea.clearRect(0, 0, 150, 60);
+       this.textArea.clearRect(0, 0, 250, 60);
        this.textArea.fillText("$"+amount, this.element.width/2, this.fontPadding);
        this.material.map.needsUpdate = true; 
        this.material.needsUpdate = true; 
@@ -819,6 +821,7 @@ function makeStartGameButton(player){
   this.textArea = canvasCtx;
   var textureElement = new THREE.Texture(this.element);
   this.material = new THREE.MeshBasicMaterial({map: textureElement}); 
+  this.material.transparent = true;
   this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(canvasEl.width/4, canvasEl.height/4), this.material);
   this.textArea.textAlign = "center";
   this.textArea.fillText("Start the game", this.element.width/2, this.element.height/2 + this.fontSize/4);
@@ -845,6 +848,7 @@ function makeJoinButton(index){
   this.textArea = canvasCtx;
   var textureElement = new THREE.Texture(this.element);
   this.material = new THREE.MeshBasicMaterial({map: textureElement});
+  this.material.transparent = true;
   this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(canvasEl.width/2, canvasEl.height/2), this.material);
   this.textArea.textAlign = "center";
   this.textArea.fillText("Deal me in", this.element.width/2, this.element.height/2 + this.fontSize/4);

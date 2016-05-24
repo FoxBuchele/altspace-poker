@@ -291,7 +291,7 @@ mainRules.handRanking = [
             var flushCards = isFlush(cards);
 			if(straightCards !== false && flushCards !== false && sameCards(straightCards, flushCards)){
                 return {
-                    cards: straightCards.concat(flushCards),
+                    cards: straightCards,
                     subVal:  maxCardVal(straightCards)
                 }
             }else{

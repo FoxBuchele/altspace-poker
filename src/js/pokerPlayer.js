@@ -80,12 +80,6 @@ player.prototype.renderVisuals = function(timeSince){
         if(this.money === 0){
             this.money = startingMoney;  
         }
-        if(this.spot === 1){
-            this.money = 25;
-        }
-        if(this.spot === 2){
-            this.money = 50;   
-        }
         toggleVisible(this.hand, true);
         toggleVisible(this.joinButton.mesh, true);
         toggleVisible(this.bettingui.mesh, false);    
