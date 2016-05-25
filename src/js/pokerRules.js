@@ -280,6 +280,23 @@ function maxCardVal(cards){
      return Math.max.apply(null, cards.map(function(val){return val.number}));
 }
 
+function sortCards(cardset){
+    var cards = carset.slice(0);
+    cards.sort(function(card1, card2){
+                if(card1.number === card2.number){
+                    return 0;
+                }else{
+                    return card1.number > card2.number;
+                }
+            });
+    cards.reverse();
+    //        cards = cards.slice(0, 5);
+    return cards;
+}
+
+
+//return a list of subvals 
+//per hand, so we can rank them
 
 var mainRules = new ruleset();
 mainRules.handRanking = [
@@ -292,7 +309,7 @@ mainRules.handRanking = [
 			if(straightCards !== false && flushCards !== false && sameCards(straightCards, flushCards)){
                 return {
                     cards: straightCards,
-                    subVal:  maxCardVal(straightCards)
+                    subVal:  [maxCardVal(straightCards)]
                 }
             }else{
                 return false;
@@ -307,9 +324,14 @@ mainRules.handRanking = [
                 return false;
             }
             
+            var sortedCards = sortCards(cards);
+            sortedCards = sortedCards.filter(function(obj){
+                return obj.number !== multiples[0].number;
+            })
+            
             return {
                 cards: multiples,
-                subVal: multiples[0].number
+                subVal: [multiples[0].number].concat(sortedCards[0])
             }
 		}
 	},
@@ -330,7 +352,7 @@ mainRules.handRanking = [
                 }else{
                     return {
                         cards: multiples.concat(secondMultiples),
-                        subVal: Math.max(parseInt(multiples[0].number), parseInt(secondMultiples[0].number))
+                        subVal: [Math.max(parseInt(multiples[0].number), parseInt(secondMultiples[0].number)), Math.min(parseInt(multiples[0].number), parseInt(secondMultiples[0].number))]
                     }
                 }
             }
@@ -346,7 +368,7 @@ mainRules.handRanking = [
             
             return {
                 cards: flushCards,
-                subVal: maxCardVal(flushCards)
+                subVal: [maxCardVal(flushCards)]
             }
 		}
 	},		
@@ -359,7 +381,7 @@ mainRules.handRanking = [
             }else{
                 return{
                     cards:straightCards,
-                    subVal: maxCardVal(straightCards)
+                    subVal: [maxCardVal(straightCards)]
                 }
             }
 		}
@@ -371,9 +393,15 @@ mainRules.handRanking = [
 			if(threeCards === false){
                 return false;
             }
+            
+            var sortedCards = sortCards(cards);
+            sortedCards = sortedCards.filter(function(obj){
+                return obj.number !== threeCards[0].number;
+            })
+            
             return {
                 cards: threeCards,
-                subVal: threeCards[0].number
+                subVal: [threeCards[0].number].concat(sortedCards.slice(0, 2))
             }
 		}
 	},	
@@ -392,10 +420,19 @@ mainRules.handRanking = [
                 if(secondMultiples.length !== 2){
                     return false;
                 }else{
+                    
+                    var subValCards = sortCards(cards);
+                    subValCards = subValCards.filter(function(obj){
+                        return obj.number !== multiples[0].number && obj.number !== secondMultiples[0].number;
+                    })
+                    
+                    var subValTest = [Math.max(multiples[0].number, secondMultiples[0].number), Math.min(multiples[0].number, secondMultiples[0].number)]
+                    subValTest.concat(subValCards[0]);
+                    
                     var retMultiples = multiples.concat(secondMultiples);
                     return {
                         cards: retMultiples,
-                        subVal: maxCardVal(retMultiples)
+                        subVal: subValTest
                     }
                 }
             }
@@ -408,10 +445,15 @@ mainRules.handRanking = [
             if(pairCards === false){
                 return false;
             }
-                
+            var sorted = sortCards(cards);
+            //remove the multiples
+            sorted = sorted.filter(function(obj){
+                return obj.number !== pairCards[0].number;
+            })
+            //get the top three cards
             return {
                 cards: pairCards,
-                subVal: pairCards[0].number
+                subVal: [pairCards[0].number].concat(sorted.slice(0, 3).map(function(obj){return obj.number}));
             }
             
 		}
@@ -419,20 +461,10 @@ mainRules.handRanking = [
 	{
 		name: "High card",
 		isHand: function(cards){
-           cards.sort(function(card1, card2){
-                if(card1.number === card2.number){
-                    return 0;
-                }else{
-                    return card1.number > card2.number;
-                }
-            });
-            cards.reverse();
-            cards = cards.slice(0, 5);
+            cards = sortCards(cards);
             return {
                 cards: cards,
-                subVal: cards.reduce(function(prev, current){
-                    return prev + current.number;
-                }, 0)
+                subVal: cards.map(function(obj){return obj.number})
             }
 		}
 	},	
