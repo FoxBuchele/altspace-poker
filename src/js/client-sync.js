@@ -390,15 +390,12 @@ function processUpdates(newUpdates){
                 
                     for(var i=0; i<handOrder.length; i++){
                         var hand = highestHands[handOrder[i]];
-                        var subV = Object.keys(highestHands[handOrder[i]].subVals);
-                        subV.sort(function(a, b){ //sorting in reverse order
-                            return b-a;
-                        });
-                        for(var j=0; j<subV.length; j++){
+                        
+                        for(var j=0; j<hand.players.length; j++){
                             winners.push({
-                                players: highestHands[handOrder[i]].subVals[subV[j]].players,
-                                hand:highestHands[handOrder[i]].subVals[subV[j]].hand
-                            });
+                                players: hand.players[j].players,
+                                hands: hand.players[j].hands
+                            })
                         }
                     }
                 
@@ -418,7 +415,7 @@ function processUpdates(newUpdates){
                                 playerWins.push({
                                     player: winningPlayer,
                                     amount: splitAmount,
-                                    hand: winners[handIndex].hand
+                                    hand: winners[handIndex].hands[0]
                                 })
                                 
                             }else{
@@ -429,12 +426,19 @@ function processUpdates(newUpdates){
                             
                         }else{
                             
+                            //split this pot amoungst these players
                             
                             var thisPotAmount = thisPot.amount;
-                            
+                            var qualifiedHands = winners[handIndex].hands.slice(0);
                              //remove any players not qualified for this pot
-                            var qualifiedPlayers = winners[handIndex].players.filter(function(elem){
-                                return (theGame.players[elem.spot].totalBet >= thisPot.amountToContribute);
+                            var qualifiedPlayers = winners[handIndex].players.filter(function(elem, index){
+                                //also remove their hand
+                                if(theGame.players[elem.spot].totalBet >= thisPot.amountToContribute){
+                                    return true;   
+                                }else{
+                                    qualifiedHands.splice(index, 1);
+                                    return false;   
+                                };
                             })
                             
                             for(var j=0; j<qualifiedPlayers.length; j++){
@@ -448,7 +452,7 @@ function processUpdates(newUpdates){
                                 playerWins.push({
                                     player: winningPlayer,
                                     amount: splitAmount,
-                                    hand: winners[handIndex].hand
+                                    hand: qualifiedHands[j]
                                 })                           
                                 
                             
@@ -456,52 +460,7 @@ function processUpdates(newUpdates){
                             
                         }
                         
-                        /*
-                        if(players.length === 1){
-                            var winningPlayer = theGame.players[highestHands[handOrder[handIndex]].players[players[0]].spot];
-                            if(winningPlayer.totalBet >= thisPot.amountToContribute){
-                                splitAmount = thisPot.amount;
-                                winningPlayer.money += splitAmount;
-                                winningPlayer.renderChips();
-                                thisPot.amount = 0;
-                                
-                                playerWins.push({
-                                    player: winningPlayer,
-                                    amount: splitAmount,
-                                    hand: highestHands[handOrder[handIndex]].hand
-                                })
-                                
-                            }else{
-                                //not qualified for this hand, let's go to the next biggest hand
-                                handIndex++;
-                                i++;
-                            }
-                            
-                        }else{
-                            var thisPotAmount = thisPot.amount;
-                            
-                             //remove any players not qualified for this pot
-                            var qualifiedPlayers = players.filter(function(elem){
-                                return (theGame.players[ highestHands[handOrder[handIndex]].players[elem].spot ].totalBet >= thisPot.amountToContribute);
-                            })
-                            
-                            for(var j=0; j<qualifiedPlayers.length; j++){
-                                
-                                var winningPlayer = theGame.players[qualifiedPlayers[j].spot];
-                                splitAmount = Math.floor(thisPotAmount/qualifiedPlayers.length);
-                                winningPlayer.money += splitAmount;
-                                thisPot.amount -= splitAmount;
-                                winningPlayer.renderChips();
-
-                                playerWins.push({
-                                    player: winningPlayer,
-                                    amount: splitAmount,
-                                    hand: highestHands[handOrder[handIndex]].hand
-                                })                           
-                                
-                            
-                        }
-                    }*/
+                       
                         
                         
                     

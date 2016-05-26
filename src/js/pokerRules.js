@@ -281,7 +281,7 @@ function maxCardVal(cards){
 }
 
 function sortCards(cardset){
-    var cards = carset.slice(0);
+    var cards = cardset.slice(0);
     cards.sort(function(card1, card2){
                 if(card1.number === card2.number){
                     return 0;
@@ -330,8 +330,8 @@ mainRules.handRanking = [
             })
             
             return {
-                cards: multiples,
-                subVal: [multiples[0].number].concat(sortedCards[0])
+                cards: multiples.concat(sortedCards[0]),
+                subVal: [multiples[0].number, sortedCards[0].number]
             }
 		}
 	},
@@ -400,8 +400,8 @@ mainRules.handRanking = [
             })
             
             return {
-                cards: threeCards,
-                subVal: [threeCards[0].number].concat(sortedCards.slice(0, 2))
+                cards: threeCards.concat(sortedCards.slice(0, 2)),
+                subVal: [threeCards[0].number].concat(sortedCards.slice(0, 2).map(function(obj){return obj.number}))
             }
 		}
 	},	
@@ -431,7 +431,7 @@ mainRules.handRanking = [
                     
                     var retMultiples = multiples.concat(secondMultiples);
                     return {
-                        cards: retMultiples,
+                        cards: retMultiples.concat(subValCards[0]),
                         subVal: subValTest
                     }
                 }
@@ -452,8 +452,8 @@ mainRules.handRanking = [
             })
             //get the top three cards
             return {
-                cards: pairCards,
-                subVal: [pairCards[0].number].concat(sorted.slice(0, 3).map(function(obj){return obj.number}));
+                cards: pairCards.concat(sorted.slice(0, 3)),
+                subVal: [pairCards[0].number].concat(sorted.slice(0, 3).map(function(obj){return obj.number}))
             }
             
 		}
@@ -1048,35 +1048,75 @@ var texasHoldEm = {
                       judgeValue.cards = getSafeCards(judgeValue);
                       if(typeof highestHand[judgeValue.value] === "undefined"){
                             var writeObj = {
-                                subVals: []
-                            };
-                            writeObj.subVals[judgeValue.subValue]= {
-                                hand: judgeValue,
-                                players:[getSafePlayer(candidateOrder[i])]
-                            };
+                                players: []
+                            }
+                            writeObj.players.push({
+                                hands: [judgeValue],
+                                players:[getSafePlayer(candidateOrder[i])],
+                                subVals: judgeValue.subValue
+                            });
                             highestHand[judgeValue.value] = writeObj;
                        }else{
                            
-                           //see if it's actually a tie, or if someone else has a better version
+                           //someone has already scored this hand, see if it's a tie or just another hand
                            
-                           if(typeof highestHand[judgeValue.value].subVals[judgeValue.subValue] !== "undefined"){
-                               //this new hand ties
-                               highestHand[judgeValue.value].subVals[judgeValue.subValue].players.push(getSafePlayer(candidateOrder[i]));
-                           }else{
-                                //writeObj.players.push(getSafePlayer(candidateOrder[i]));
-                                //highestHand[judgeValue.value].subVals[judgeValue.subValue]
-                                highestHand[judgeValue.value].subVals[judgeValue.subValue] = {
-                                    hand: judgeValue,
-                                    players:[getSafePlayer(candidateOrder[i])]
-                                };
-                                console.log("TossUp!", highestHand[judgeValue.value].hand, judgeValue);
-                           }                   
+                           var isTie = false;
                            
+                           for(var j=0; j<highestHand[judgeValue.value].players.length; j++){
+                               if(arraysEqual(judgeValue.subValue, highestHand[judgeValue.value].players[j].subVals)){
+                                   isTie = true;
+                                   console.log('its a tie!');
+                                   highestHand[judgeValue.value].players[j].players.push(getSafePlayer(candidateOrder[i]));
+                                   highestHand[judgeValue.value].players[j].hands.push(judgeValue);
+
+                                   break;
+                               }
+                           }
+                           
+                           if(!isTie){
+                               
+                               highestHand[judgeValue.value].players.push({
+                                   hands: [judgeValue],
+                                   players:[getSafePlayer(candidateOrder[i])],
+                                   subVals: judgeValue.subValue
+                               });
+                               console.log("Close!", highestHand[judgeValue.value].hand, judgeValue);
+                               
+                           }
                        }
 
                     }
                     
-                    //we want to sort numerically, highest rated hand won
+                    //hands are auto sorted, now we need to sort tieing players by the subvalues
+                    
+                    highestHand.forEach(function(hand){
+                        
+                        //condense players that tie to one hand
+                        
+                        
+                        hand.players.sort(function(first, second){
+                            var leftWinner;
+                            for(var i=0; i<first.subVals.length; i++){
+                                if(first.subVals[i] > second.subVals[i]){
+                                    leftWinner = true;
+                                    break;
+                                }else if(second.subVals[i] > first.subVals[i]){
+                                    leftWinner = false;
+                                    break;
+                                }
+                            }
+                            if(typeof leftWinner === "undefined"){
+                                return 0;
+                            }
+                            if(leftWinner){ //we want the winner to be first in the players array, so reverse this
+                                return -1;
+                            }else{
+                                return 11;
+                            }
+                        })
+                        
+                    })
+                
                 
                     sendUpdate({hands: highestHand}, "playerWin", {thenUpdate: true});
                     
@@ -1101,7 +1141,7 @@ var texasHoldEm = {
 
                     game.step = 10;
 
-                    game.runStep(); //kick out players without money, transfer control
+                    //game.runStep(); //kick out players without money, transfer control
                 
                 
 			}
@@ -1186,5 +1226,17 @@ function toggleVisible(object, visible){
 }
 
 
+function arraysEqual(a, b) {
+  if (a === b) return true;
+  if (a == null || b == null) return false;
+  if (a.length != b.length) return false;
 
+  // If you don't care about the order of the elements inside
+  // the array, you should sort both arrays here.
+
+  for (var i = 0; i < a.length; ++i) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
 
