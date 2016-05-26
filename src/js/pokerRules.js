@@ -1141,7 +1141,7 @@ var texasHoldEm = {
 
                     game.step = 10;
 
-                    //game.runStep(); //kick out players without money, transfer control
+                    game.runStep(); //kick out players without money, transfer control
                 
                 
 			}
