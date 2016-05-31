@@ -165,8 +165,6 @@ deck.prototype.getCard = function(theCard, large, visible){
       
       if(large){
         thisCard.geom.scale.set(3, 3, 1);
-        thisCard.geom.position.set(i*0.1, thisCard.geom.position.y, i*0.1);
-        //thisCard.geom.rotation.set(0, Math.PI/4, 0);
         toggleVisible(thisCard.geom, true);
         thisCard.movementTween.rotation.copy(thisCard.geom.rotation);
         thisCard.movementTween.position.copy(thisCard.geom.position);
