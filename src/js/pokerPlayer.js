@@ -40,6 +40,7 @@ player.prototype.renderVisuals = function(timeSince){
         toggleVisible(this.bettingui.mesh, false);    
         //toggleVisible(this.optionsui.mesh, false);
         toggleVisible(this.hand, false);
+        toggleVisible(this.chipCount.mesh, false);
         toggleVisible(this.joinButton.mesh, false);
             
         break;
@@ -53,6 +54,7 @@ player.prototype.renderVisuals = function(timeSince){
          
         this.chipStack = new THREE.Object3D();
         this.hand.add(this.chipStack);
+        this.chipCount = new chipCount(this);
         this.bettingui = new bettingUI(this);
         //this.bettingui.mesh.rotation.y = -Math.PI/8;  
         this.bettingui.mesh.rotation.x = -Math.PI/2 + Math.PI/4;
@@ -82,6 +84,7 @@ player.prototype.renderVisuals = function(timeSince){
         }
         toggleVisible(this.hand, true);
         toggleVisible(this.joinButton.mesh, true);
+        toggleVisible(this.chipCount.mesh, false);
         toggleVisible(this.bettingui.mesh, false);    
         toggleVisible(this.optionsui.mesh, false);
             
@@ -91,6 +94,7 @@ player.prototype.renderVisuals = function(timeSince){
         //make buttons and UI
          
         toggleVisible(this.joinButton.mesh, false);
+        toggleVisible(this.chipCount.mesh, true);
         this.renderChips();
     
             
@@ -230,6 +234,10 @@ player.prototype.win = function(){
 
 player.prototype.renderChips = function(){
   renderChips(this.chipStack, this.money);
+    
+  //Update the canvas with the new amount
+  this.chipCount.updateMoney(this.money);
+    
   this.chipStack.position.copy(tableOffset);
 }
 

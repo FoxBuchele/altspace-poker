@@ -538,6 +538,47 @@ function bettingUI(player){
                 })(this), [addButtonArray, removeButtonArray, ctrlButtonArray]));
       this.mesh.updateBehaviors(0);
       this.updateBet(0);
+    
+}
+
+function chipCount(player){
+    
+    this.canvasEl = document.createElement('canvas');
+    this.canvasEl.width = 218;
+    this.canvasEl.height = 63;
+    
+    this.textArea = this.canvasEl.getContext('2d');
+    
+    this.fontSize = 32;
+    this.fontPadding = (63/2 + 32/2) - 5;
+    this.textArea.font = this.fontSize+"px Arial";
+    
+    
+    
+    this.material = new THREE.MeshBasicMaterial({map: new THREE.Texture(this.canvasEl)}); 
+    this.material.transparent = true;
+    
+    this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(this.canvasEl.width/4, this.canvasEl.height/4), this.material);
+    this.textArea.textAlign = "center";
+    this.textArea.fillStyle = "rgba(255,255,255, 1)";
+    this.textArea.fillText("$test", this.canvasEl.width/2, this.fontPadding);
+    this.material.map.needsUpdate = true;
+    this.material.needsUpdate = true;
+    player.hand.add(this.mesh);
+    this.mesh.position.y -= 130;
+    this.mesh.position.x += 80;
+    this.mesh.position.z += 45;
+    this.mesh.rotation.x -= Math.PI/2;
+    this.mesh.rotation.x += Math.PI/8;
+    
+}
+
+chipCount.prototype.updateMoney = function(amount){
+    this.textArea.clearRect(0, 0, 250, 63);
+    this.textArea.fillText("$"+amount, this.canvasEl.width/2, this.fontPadding);
+    this.material.map.needsUpdate = true;
+    this.material.needsUpdate = true;
+    
 }
 
 bettingUI.prototype.updateBet = function(amount){ 

@@ -38,6 +38,7 @@ function getSafePlayer(thePlayer, important){
     player.joinButton = null;
     player.bettingui = null;
     player.optionsui = null;
+    player.chipCount = null;
     player.chipStack = null;
     player.joinButton = null; 
     player.hand = null;
