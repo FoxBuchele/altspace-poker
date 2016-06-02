@@ -626,12 +626,19 @@ game.prototype.resetBetters = function(){
   //sets the betting order to a list of the players that should be given the option to bet this round
     
   var bettingOrder = [];
-  for(var i=0; i<this.dealingOrder.length; i++){
+  for(var i=1; i<this.dealingOrder.length; i++){
     if(this.dealingOrder[i].state === 2 && this.dealingOrder[i].money > 0){// > 0 && this.dealingOrder[i].state <= 3){    //they're still in the game, but waiting
       this.dealingOrder[i].betThisRound = 0;
       bettingOrder.push(i);
     }
   }
+  
+  //now try to add the dealer
+  if(this.dealingOrder[0].state === 2 && this.dealingOrder[0].money > 0){ //they're still in the game, but waiting
+      this.dealingOrder[0].betThisRound = 0;
+      bettingOrder.push(0);
+   }
+    
   if(bettingOrder.length > 1){  //if there's only one person to bet, don't need to shift the array
       for(var i=0; i<this.dealer; i++){
           bettingOrder.push(bettingOrder.shift());
@@ -675,12 +682,17 @@ game.prototype.resetDealers = function(){
 
 game.prototype.rotateDealers = function(){ 
     
+    for(var i=0; i<this.players.length; i++){
+        toggleVisible(this.players[i].dealerChip.mesh, false);
+    }
+    
     this.resetDealers();
     
     //increment the dealer index
     
     this.dealer = (this.dealer+1)%this.dealingOrder.length;
     
+    toggleVisible(this.dealingOrder[this.dealer].dealerChip.mesh, true);
     
 }
 
@@ -830,7 +842,6 @@ var betStep = function(game){
             //do nothing, wait for authority to tell us to go to the next step
             
         }else{
-
             if(game.step === 2){
                 var firstPlayer = game.dealingOrder[game.bettingOrder[game.better]];
                 var firstMoney = Math.min(firstPlayer.money, game.smallBlind);

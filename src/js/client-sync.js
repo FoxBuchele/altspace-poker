@@ -41,6 +41,7 @@ function getSafePlayer(thePlayer, important){
     player.chipCount = null;
     player.chipStack = null;
     player.joinButton = null; 
+    player.dealerChip = null;
     player.hand = null;
     player.startGame = null;
     player.prevState = null;

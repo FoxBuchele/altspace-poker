@@ -41,6 +41,7 @@ player.prototype.renderVisuals = function(timeSince){
         //toggleVisible(this.optionsui.mesh, false);
         toggleVisible(this.hand, false);
         toggleVisible(this.chipCount.mesh, false);
+        toggleVisible(this.dealerChip.mesh, false);
         toggleVisible(this.joinButton.mesh, false);
             
         break;
@@ -56,6 +57,7 @@ player.prototype.renderVisuals = function(timeSince){
         this.hand.add(this.chipStack);
         this.chipCount = new chipCount(this);
         this.bettingui = new bettingUI(this);
+        this.dealerChip = new dealerChip(this);
         //this.bettingui.mesh.rotation.y = -Math.PI/8;  
         this.bettingui.mesh.rotation.x = -Math.PI/2 + Math.PI/4;
         
@@ -83,10 +85,13 @@ player.prototype.renderVisuals = function(timeSince){
             this.money = startingMoney;  
         }
         toggleVisible(this.hand, true);
+        toggleVisible(this.dealerChip.mesh, false);
+
         toggleVisible(this.joinButton.mesh, true);
         toggleVisible(this.chipCount.mesh, false);
         toggleVisible(this.bettingui.mesh, false);    
         toggleVisible(this.optionsui.mesh, false);
+            
             
         break;
       case 0:
