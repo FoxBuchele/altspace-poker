@@ -47,6 +47,7 @@ var cardTemplate = {
 var globalUserId;
 var globalUserName;
 var globalPlayerIndex = -1;
+var globalPlayerHead;
 
 //function makeGame(){
   //theGame = new game();
@@ -179,11 +180,15 @@ function ready(firstInstance) {
                     theGame.models[models.fileBase[i]] = req.objects[i];
 
                 }
-                
-                altspace.getUser().then(function(result){
-
+                var promises = [altspace.getUser(), altspace.getThreeJSTrackingSkeleton()]
+                Promise.all(promises).then(function(arr){
+                        var result = arr[0];
                         globalUserId = result.userId;
                         globalUserName = result.displayName;    
+                        
+                        var skeleton = arr[1];
+                        sim.scene.add(skeleton);
+                        globalPlayerHead = skeleton.getJoint('Head');
                     
                         createTable(); 
                         main();

@@ -52,8 +52,12 @@ function displayMessageSingle(message){
             message.mesh = createMessage(message.message, message.messageType, message.arrowSide);
     
             sim.scene.add(message.mesh);
-
-            message.mesh.quaternion.copy(message.messageRot);
+            
+            //change this so it's always pointing at the player
+            
+            message.mesh.lookAt(globalPlayerHead.position);
+    
+            //message.mesh.quaternion.copy(message.messageRot);
 
             var toPos = new THREE.Vector3();
             var fromPos = new THREE.Vector3();
