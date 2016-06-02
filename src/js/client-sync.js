@@ -505,7 +505,7 @@ function processUpdates(newUpdates){
                                 
                         
                                 sendingMessages.push({
-                                        timeToDisappear: 6000,
+                                        timeToDisappear: 10000,
                                         messageType: 2,
                                         message: message,
                                         messagePos: pos,
@@ -524,7 +524,7 @@ function processUpdates(newUpdates){
                                 pos2.copy(pos);
                                 pos2.y += 50;
                                 sendingMessages.push({
-                                    timeToDisappear: 6000,
+                                    timeToDisappear: 10000,
                                     messageType: 3,
                                     message: cardMessage,
                                     messagePos: pos2,

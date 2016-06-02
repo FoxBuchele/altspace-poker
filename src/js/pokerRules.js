@@ -1191,7 +1191,7 @@ var texasHoldEm = {
                 }else{
                     game.winGame(activeIndex);
                 }
-            }, 5000);
+            }, 10000);
            
             //cutoffTime = Date.now();
             //sendUpdate({transferControl: game.dealingOrder[game.dealer].spot, endstatePlayers: playerStates}, "transferControl", {thenUpdate: true});
