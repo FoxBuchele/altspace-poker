@@ -192,7 +192,7 @@ function processUpdates(newUpdates){
                         moveDirection: new THREE.Vector3(0, 0, 0),
                         scale: new THREE.Vector3(1, 1, 1),
                         arrowSide: "down",
-                        timeToDisappear: 4000,
+                        timeToDisappear: 4000
                     })
                 }
                 

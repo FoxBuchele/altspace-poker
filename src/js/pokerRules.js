@@ -788,13 +788,18 @@ game.prototype.nextHand = function(){
     }
     
     sendUpdate({authority:globalUserId, deck: getSafeCards({cards: this.deck.shuffledDeck}), dealer: this.dealer, blind: this.smallBlind, blindStartTime: this.timeBlindStarted},"startHand");
-
+    
     //this.deck.shuffle();
     authority = globalUserId;
     //create a new round record, send it to everyone
+    for(var i=0; i<this.players.length; i++){
+        toggleVisible(this.players[i].dealerChip.mesh, false);
+    }
 
+    toggleVisible(this.dealingOrder[this.dealer].dealerChip.mesh, true);
     //start level
     setTimeout((function(tehGame){
+        
         tehGame.start();
     })(this), 5000);
     
