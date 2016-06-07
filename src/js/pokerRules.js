@@ -164,7 +164,7 @@ deck.prototype.getCard = function(theCard, large, visible){
       thisCard.geom.userData.large = large;
       
       if(large){
-        thisCard.geom.scale.set(3, 3, 1);
+        thisCard.geom.scale.set(1.5, 1.5, 1);
         toggleVisible(thisCard.geom, true);
         thisCard.movementTween.rotation.copy(thisCard.geom.rotation);
         thisCard.movementTween.position.copy(thisCard.geom.position);
@@ -196,7 +196,6 @@ function createCardGeom(theCard, doubleSided, visible){
     
     
     var cardfront = theGame.models.CardFront.clone();
-    //uv for the card front is flipped, so we have to do this for some reason
     cardfront.scale.set(300, 300, 300);
     var material;
     if(!visible){
@@ -788,8 +787,8 @@ game.prototype.nextHand = function(){
     }
     
     sendUpdate({authority:globalUserId, deck: getSafeCards({cards: this.deck.shuffledDeck}), dealer: this.dealer, blind: this.smallBlind, blindStartTime: this.timeBlindStarted},"startHand");
-    this.sharedCardContainer.lookAt(globalPlayerHead.position);
-
+    this.resetSharedRotation();
+    
     //this.deck.shuffle();
     authority = globalUserId;
     //create a new round record, send it to everyone
@@ -809,6 +808,10 @@ game.prototype.nextHand = function(){
 
 game.prototype.winGame = function(index){
     sendUpdate({index: index, name:theGame.players[index].name},"totalVictory", {thenUpdate:true});
+}
+
+game.prototype.resetSharedRotation = function(){
+    this.sharedCardContainer.lookAt(globalPlayerHead.position.add(new THREE.Vector3(0, 300, 0)));
 }
 /*
 game.prototype.winGame = function(pI){
@@ -902,8 +905,8 @@ function _checkForDoneBetting(){
 
 
 var getSharedCardPosition = function(i){
-    var padding = 80;
-    return {x:(220-(cardTemplate.width+padding)*i), y: 100, z: 0};
+    var padding = 20;
+    return {x:(90-(cardTemplate.width+padding)*i), y: -120, z: 0};
 }
 
 var texasHoldEm = {
@@ -915,8 +918,8 @@ var texasHoldEm = {
         game.deck.shuffle();
         game.currentAuthority = globalUserId;
         sendUpdate({authority:globalUserId, dealer: game.dealer, deck: getSafeCards({cards: game.deck.shuffledDeck}), blind: game.smallBlind, blindStartTime: game.timeBlindStarted}, "startHand");
-        game.sharedCardContainer.lookAt(globalPlayerHead.position);
-
+        game.resetSharedRotation();
+          
         for(var i=0; i<game.players.length; i++){
             toggleVisible(game.players[i].dealerChip.mesh, false);
         }
@@ -963,7 +966,7 @@ var texasHoldEm = {
                 
                 for(var i=0; i<game.sharedCards.cards.length; i++){ 
                    game.sharedCards.cards[i] = game.deck.getCard(game.sharedCards.cards[i], true, true);
-                   var toSharedTween = new TWEEN.Tween(game.sharedCards.cards[i].movementTween.position).to(getSharedCardPosition(i), 2000); 
+                   var toSharedTween = new TWEEN.Tween(game.sharedCards.cards[i].movementTween.position).to(getSharedCardPosition(i), 500); 
                    toSharedTween.onUpdate((function(card, movementTween){
                       return function(value1){
                           //move the cards to the player
@@ -996,7 +999,7 @@ var texasHoldEm = {
                 toggleVisible(game.betCube, false);
                 game.sharedCards.cards[3] = game.deck.getCard(game.sharedCards.cards[3], true, true);
 
-                       var toPlayerTween = new TWEEN.Tween(game.sharedCards.cards[3].movementTween.position).to(getSharedCardPosition(3), 2000);
+                       var toPlayerTween = new TWEEN.Tween(game.sharedCards.cards[3].movementTween.position).to(getSharedCardPosition(3), 500);
                        toPlayerTween.onUpdate((function(card){
                           return function(value1){
                               //move the cards to the player
@@ -1025,7 +1028,7 @@ var texasHoldEm = {
                 toggleVisible(game.betCube, false);
                  game.sharedCards.cards[4] = game.deck.getCard(game.sharedCards.cards[4], true, true);
 
-                       var toPlayerTween = new TWEEN.Tween(game.sharedCards.cards[4].movementTween.position).to(getSharedCardPosition(4), 2000);
+                       var toPlayerTween = new TWEEN.Tween(game.sharedCards.cards[4].movementTween.position).to(getSharedCardPosition(4), 500);
                        toPlayerTween.onUpdate((function(card){
                           return function(value1){
                               //move the cards to the player

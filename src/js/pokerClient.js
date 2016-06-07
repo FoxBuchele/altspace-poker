@@ -267,11 +267,9 @@ function arrangeCards(cards){
   var hand = new THREE.Object3D();
   sim.scene.add(hand); 
   for(var i=0; i<numCards; i++){
-    //cards[i] = createCard();
     card = cards[i].geom;
     card.position.x -= (fullOffset - (cardTemplate.width+cardTemplate.padding) * i);
     hand.add(card);
-    //hand[i].lookAt(new THREE.Vector3(0, tableOffset.y + (cardTemplate.height/2), 225 * 1.5))
   }
   //put them in a hand and return the obj?
   

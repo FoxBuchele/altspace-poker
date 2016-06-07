@@ -179,8 +179,7 @@ function processUpdates(newUpdates){
                 authority = data.authority;
                 theGame.resetCards();
                 
-                theGame.sharedCardContainer.lookAt(globalPlayerHead.position);
-
+                theGame.resetSharedRotation();
                 
                 if(data.blind !== theGame.smallBlind){
                     theGame.smallBlind = data.blind;
