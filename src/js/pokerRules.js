@@ -788,7 +788,8 @@ game.prototype.nextHand = function(){
     }
     
     sendUpdate({authority:globalUserId, deck: getSafeCards({cards: this.deck.shuffledDeck}), dealer: this.dealer, blind: this.smallBlind, blindStartTime: this.timeBlindStarted},"startHand");
-    
+    this.sharedCardContainer.lookAt(globalPlayerHead.position);
+
     //this.deck.shuffle();
     authority = globalUserId;
     //create a new round record, send it to everyone
@@ -914,6 +915,8 @@ var texasHoldEm = {
         game.deck.shuffle();
         game.currentAuthority = globalUserId;
         sendUpdate({authority:globalUserId, dealer: game.dealer, deck: getSafeCards({cards: game.deck.shuffledDeck}), blind: game.smallBlind, blindStartTime: game.timeBlindStarted}, "startHand");
+        game.sharedCardContainer.lookAt(globalPlayerHead.position);
+
         for(var i=0; i<game.players.length; i++){
             toggleVisible(game.players[i].dealerChip.mesh, false);
         }
