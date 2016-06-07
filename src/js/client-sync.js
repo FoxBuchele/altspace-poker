@@ -133,6 +133,11 @@ function processUpdates(newUpdates){
                 theGame.players[data.registerIndex].money = data.money;
                 theGame.players[data.registerIndex].name = data.name;
                
+                if(data.userId === globalUserId){
+                    globalPlayerIndex = data.registerIndex;
+                    theGame.sharedCardContainer.lookAt(globalPlayerHead.position);
+                }
+                
                 /*var forwardDirection = new THREE.Vector3(0, 0, 1);
                 var matrix = new THREE.Matrix4();
                 matrix.extractRotation(handObj.matrix);

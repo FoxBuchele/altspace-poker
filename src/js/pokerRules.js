@@ -220,15 +220,17 @@ function createCardGeom(theCard, doubleSided, visible){
         var othercardfront = cardfront.clone();
         othercardfront.rotation.y = Math.PI;
         card.add(othercardfront);
+        theGame.sharedCardContainer.add(card);
     }else{
         var cardback = theGame.models.CardBack.clone();
         card.add(cardback);
+        sim.scene.add(card);
     }
   
   card.position.copy(tableOffset);
   card.position.y += cardTemplate.height/2;
   
-  sim.scene.add(card);  
+  //sim.scene.add(card);  
   theCard.geom = card;
   return card; 
 }
@@ -584,6 +586,10 @@ function game(){
   this.currentBet = 0;
   this.bettingPots = [new pot()];
   this.roundRecord = [];
+    
+    
+  this.sharedCardContainer = new THREE.Object3D();
+  sim.scene.add(this.sharedCardContainer);
 }
 
 game.prototype.newPot = function(){
@@ -945,7 +951,7 @@ var texasHoldEm = {
             execClient: function(game){
                 
                 toggleVisible(game.betCube, false);
-
+                
                 for(var i=0; i<game.sharedCards.cards.length; i++){ 
                    game.sharedCards.cards[i] = game.deck.getCard(game.sharedCards.cards[i], true, true);
                    var toSharedTween = new TWEEN.Tween(game.sharedCards.cards[i].movementTween.position).to(getSharedCardPosition(i), 2000); 
