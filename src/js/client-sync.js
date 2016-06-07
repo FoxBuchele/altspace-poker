@@ -135,7 +135,6 @@ function processUpdates(newUpdates){
                
                 if(data.userId === globalUserId){
                     globalPlayerIndex = data.registerIndex;
-                    theGame.sharedCardContainer.lookAt(globalPlayerHead.position);
                 }
                 
                 /*var forwardDirection = new THREE.Vector3(0, 0, 1);
@@ -179,6 +178,9 @@ function processUpdates(newUpdates){
                 //theGame.currentAuthority = data.authority;
                 authority = data.authority;
                 theGame.resetCards();
+                
+                theGame.sharedCardContainer.lookAt(globalPlayerHead.position);
+
                 
                 if(data.blind !== theGame.smallBlind){
                     theGame.smallBlind = data.blind;
