@@ -871,6 +871,11 @@ function startGame(player){
         theGame.resetDealers();
         theGame.dealer = theGame.dealingOrder.indexOf(pl);
         theGame.rotateDealers();
+        for(var i=0; i<theGame.players.length; i++){
+            toggleVisible(theGame.players[i].dealerChip.mesh, false);
+        }
+    
+        toggleVisible(theGame.dealingOrder[theGame.dealer].dealerChip.mesh, true);
         theGame.step = 0;//do the initialization in the game controller
         theGame.timeBlindStarted = Date.now();
         //sendUpdate({stepUpdate: 0}, "startGame");

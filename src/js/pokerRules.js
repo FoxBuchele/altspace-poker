@@ -688,17 +688,13 @@ game.prototype.resetDealers = function(){
 
 game.prototype.rotateDealers = function(){ 
     
-    for(var i=0; i<this.players.length; i++){
-        toggleVisible(this.players[i].dealerChip.mesh, false);
-    }
-    
+   
     this.resetDealers();
     
     //increment the dealer index
     
     this.dealer = (this.dealer+1)%this.dealingOrder.length;
-    
-    toggleVisible(this.dealingOrder[this.dealer].dealerChip.mesh, true);
+
     
 }
 
@@ -913,6 +909,11 @@ var texasHoldEm = {
         game.deck.shuffle();
         game.currentAuthority = globalUserId;
         sendUpdate({authority:globalUserId, dealer: game.dealer, deck: getSafeCards({cards: game.deck.shuffledDeck}), blind: game.smallBlind, blindStartTime: game.timeBlindStarted}, "startHand");
+        for(var i=0; i<game.players.length; i++){
+            toggleVisible(game.players[i].dealerChip.mesh, false);
+        }
+    
+        toggleVisible(game.dealingOrder[game.dealer].dealerChip.mesh, true);
         game.start();
         //since only the dealer will do this step, we can assume the globalUserId is the dealer
         

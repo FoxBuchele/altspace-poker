@@ -211,7 +211,11 @@ function processUpdates(newUpdates){
                 theGame.bettingPots.push(new pot());
                 //theGame.step = 1;
                 theGame.dealer = data.dealer;
-                
+                for(var i=0; i<theGame.players.length; i++){
+                    toggleVisible(theGame.players[i].dealerChip.mesh, false);
+                }
+
+                toggleVisible(theGame.dealingOrder[theGame.dealer].dealerChip.mesh, true);
                 /*
                 var words = theGame.players[theGame.dealer].name + " dealt a new hand!";
                 var pos = new THREE.Vector3();
