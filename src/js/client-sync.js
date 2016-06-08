@@ -497,12 +497,24 @@ function processUpdates(newUpdates){
                                 });
                                 
                                 
+                                
+                        
+                    }
+                    
+                
+                    for(var i=0; i<winners.length; i++){
+                        
+                        for(var j=0; j<winners[i].players.length; j++){
+                                var handObj = theGame.players[winners[i].players[j].spot].hand;
+                                    var pos = new THREE.Vector3();
+                                    pos.copy(handObj.position);
+
                                 var cardMessage = "";
-                                for(var k=0; k<playerWins[i].hand.cards.length; k++){
+                                for(var k=0; k<winners[i].hands[j].cards.length; k++){
                                     if(k !== 0){
                                         cardMessage += ", ";
                                     }
-                                    cardMessage += card.prototype.friendlyRepresentation.apply(playerWins[i].hand.cards[k]);
+                                    cardMessage += card.prototype.friendlyRepresentation.apply(winners[i].hands[j].cards[k]);
                                 }
                                 var pos2 = new THREE.Vector3();
                                 pos2.copy(pos);
@@ -514,9 +526,13 @@ function processUpdates(newUpdates){
                                     messagePos: pos2,
                                     messageRot: handObj.quaternion
                                 });
+                            
+                        }
                         
                     }
-                    
+                
+                
+                
                 
                 //condense any straggler chips to one pot
                         
