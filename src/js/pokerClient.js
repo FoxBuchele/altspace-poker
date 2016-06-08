@@ -280,40 +280,39 @@ function arrangeHand(hand, spotIndex){
     //later switch out for the physical positions of the players maybe?
     hand.position.y -= 10;
    switch(spotIndex){
-      case 0:
-        //hand.position.x -= (fullOffset -     (cardTemplate.width+cardTemplate.padding) * i);
-        hand.position.z = 225;
-        hand.userData.forward = new THREE.Vector3(0, 0, 0);
-        break;
-      case 1:
-        hand.position.x = 195;
-        hand.position.z = 112;
-        hand.rotation.y = Math.PI/3;
-        hand.userData.forward = new THREE.Vector3(0, 0, 0);
-        break;
-      case 2:
-        hand.position.x = 195;
-        hand.position.z = -112;
-        hand.rotation.y = 2*Math.PI/3;
-        hand.userData.forward = new THREE.Vector3(0, 0, 0);
-        break;
-      case 3:
-        hand.position.z = -225;
-        hand.rotation.y = -Math.PI;
-        hand.userData.forward = new THREE.Vector3(0, 0, 0);
-        break;
-      case 4:
-        hand.position.x = -195;
-        hand.position.z = -112;
-        hand.rotation.y = -2*Math.PI/3;
-        hand.userData.forward = new THREE.Vector3(0, 0, 0);   
-           break;
-       case 5:
+           case 0:
         hand.position.x = -195;
         hand.position.z = 112;
         hand.rotation.y = -Math.PI/3;
-       hand.userData.forward = new THREE.Vector3(0, 0, 0);    
            break;
+           case 1:
+        hand.position.x = -195;
+        hand.position.z = -112;
+        hand.rotation.y = -2*Math.PI/3;
+           break;
+           case 2:
+        hand.position.z = -225;
+        hand.rotation.y = -Math.PI;
+        break;
+           case 3:
+        hand.position.x = 195;
+        hand.position.z = -112;
+        hand.rotation.y = 2*Math.PI/3;
+        break;
+           case 4:
+        hand.position.x = 195;
+        hand.position.z = 112;
+        hand.rotation.y = Math.PI/3;
+        break;
+           case 5:
+        hand.position.z = 225;
+        break;
+      
+      
+      
+      
+      
+       
    }
   
 }
