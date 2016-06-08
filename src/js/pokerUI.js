@@ -731,20 +731,26 @@ function bettingUIInteractions(pl, updateBet, buttonArray){
   this.addMoney = function addMoney(amount){
     console.log('got a click event');
     if(!this.allowedTo()){return false};
+      
+    if(this.player.currentBet + amount >= this.player.money){   //do we have the funds
+        return;      
+    }
+      
     if(this.player.raised === false){                       //are we calling or raising?
         if(amount < 0){
             return;
         }
-        if(amount < theGame.minRaise){                  //is our raise more than the last bet (right now just blinds?)
+        if(amount < theGame.minRaise && this.player.currentBet + theGame.minRaise <= this.player.money){                  //is our raise more than the last bet 
             this.addMoney(theGame.minRaise);
         }else{
             this.player.currentBet += amount;
             this.updateBet(this.player.currentBet);
-        }
+        }        
         this.player.raised = true;
+
     }else{
         
-        if((this.player.betThisRound + this.player.currentBet + amount) < (theGame.currentBet + theGame.minRaise)){ //are we trying to go lower than last bet (right now just blinds)
+        if((this.player.betThisRound + this.player.currentBet + amount) < (theGame.currentBet + theGame.minRaise)){ //are we trying to go lower than last bet
             this.player.raised = false;
             var callBet = (theGame.currentBet - this.player.betThisRound);
             this.player.currentBet = callBet;
@@ -752,11 +758,11 @@ function bettingUIInteractions(pl, updateBet, buttonArray){
             return;
         }
        
-        if(this.player.currentBet + amount <= this.player.money){   //do we have the funds
+       
         
-            this.player.currentBet+= amount;
-            this.updateBet(this.player.currentBet);
-        }
+        this.player.currentBet+= amount;
+        this.updateBet(this.player.currentBet);
+        
         
     }  
     /*
