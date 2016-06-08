@@ -585,9 +585,11 @@ function game(){
   this.currentBet = 0;
   this.bettingPots = [new pot()];
   this.roundRecord = [];
-    
+
     
   this.sharedCardContainer = new THREE.Object3D();
+  this.headOffset = new THREE.Vector3(0, 300, 0);
+  this.headPosition = new THREE.Vector3();
   sim.scene.add(this.sharedCardContainer);
 }
 
@@ -811,7 +813,9 @@ game.prototype.winGame = function(index){
 }
 
 game.prototype.resetSharedRotation = function(){
-    this.sharedCardContainer.lookAt(globalPlayerHead.position.add(new THREE.Vector3(0, 300, 0)));
+    this.headPosition.copy(globalPlayerHead.position);
+    this.headPosition.add(this.headOffset);
+    this.sharedCardContainer.lookAt(this.headPosition);
 }
 /*
 game.prototype.winGame = function(pI){

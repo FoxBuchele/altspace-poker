@@ -593,7 +593,7 @@ function updatePlayers(time){
   if(typeof theGame.betCube !== "undefined" && theGame.betCube.visible){
     theGame.betCube.rotation.y += 0.005;
   }    
-
+  theGame.resetSharedRotation();
   TWEEN.update();
   requestAnimationFrame(updatePlayers);
 }
