@@ -146,10 +146,6 @@ function processUpdates(newUpdates){
                 var handObj = theGame.players[data.registerIndex].hand
                 var pos = new THREE.Vector3();
                 pos.copy(handObj.position);
-                var forwardDirection = new THREE.Vector3();
-                forwardDirection.copy(handObj.userData.forward);
-                forwardDirection.multiplyScalar(-150);
-                pos.add(forwardDirection);
                 var winMessage = new errorMessage({
                     timeToDisappear: 2000,
                     messageType: 1,
@@ -255,10 +251,6 @@ function processUpdates(newUpdates){
                 var pos = new THREE.Vector3();
                 pos.copy(handObj.position);
                 
-                var forwardDirection = new THREE.Vector3();
-                forwardDirection.copy(handObj.userData.forward);
-                forwardDirection.multiplyScalar(-100);
-                pos.add(forwardDirection);
                 var message;
                 if(data.amount === 0){
                     message = name+" checked!";
@@ -284,10 +276,6 @@ function processUpdates(newUpdates){
                 var pos = new THREE.Vector3();
                 pos.copy(handObj.position);
                 
-                var forwardDirection = new THREE.Vector3();
-                forwardDirection.copy(handObj.userData.forward);
-                forwardDirection.multiplyScalar(-100);
-                pos.add(forwardDirection);
                 var message = name+" folded...";
                 var winMessage = new errorMessage({
                         timeToDisappear: 3000,
@@ -308,14 +296,8 @@ function processUpdates(newUpdates){
                     var handObj = thisPlayer.hand;
                         var pos = new THREE.Vector3();
                         pos.copy(handObj.position);
-
-                    var forwardDirection = new THREE.Vector3();
-                        forwardDirection.copy(handObj.userData.forward);
-                        forwardDirection.multiplyScalar(-100);
-                        pos.add(forwardDirection);
-                        pos.y += 25;
                 
-                var message = thisPlayer.name+" won by forfeit!";
+                    var message = thisPlayer.name+" won by forfeit!";
                         var winMessage = new errorMessage({
                                 timeToDisappear: 5000,
                                 messageType: 2,
@@ -340,10 +322,6 @@ function processUpdates(newUpdates){
                         var pos = new THREE.Vector3();
                         pos.copy(handObj.position);
 
-                    var forwardDirection = new THREE.Vector3();
-                        forwardDirection.copy(handObj.userData.forward);
-                        forwardDirection.multiplyScalar(100);
-                        pos.add(forwardDirection);
                         pos.y += 180;
                 
                 
@@ -503,11 +481,6 @@ function processUpdates(newUpdates){
                                     var pos = new THREE.Vector3();
                                     pos.copy(handObj.position);
 
-                                var forwardDirection = new THREE.Vector3();
-                                    forwardDirection.copy(handObj.userData.forward);
-                                    forwardDirection.multiplyScalar(-100);
-                                    pos.add(forwardDirection);
-                                    pos.y += 25;
                                 if(playerWins.length === 1){
                                   var message = winningPlayer.name+" won $"+splitAmount+" with "+playerWins[i].hand.name+"!";
                                 }else{

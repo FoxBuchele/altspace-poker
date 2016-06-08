@@ -203,10 +203,6 @@ function displayBlindMessages(smallBlind, bigBlind, players){
             var pos = new THREE.Vector3();
             pos.copy(handObj.position);
 
-        var forwardDirection = new THREE.Vector3();
-            forwardDirection.copy(handObj.userData.forward);
-            forwardDirection.multiplyScalar(-100);
-            pos.add(forwardDirection);
             pos.y += 25;
         
         var message1 = players[0].name+" bet "+smallBlind+" for the small blind";
@@ -215,7 +211,7 @@ function displayBlindMessages(smallBlind, bigBlind, players){
         var betMessages= [];
         
         betMessages.push({
-                timeToDisappear: 3000,
+                timeToDisappear: 7000,
                 messageType: 2,
                 message: message1,
                 messagePos: pos,
@@ -230,14 +226,10 @@ function displayBlindMessages(smallBlind, bigBlind, players){
          var pos2 = new THREE.Vector3();
         pos2.copy(handObj2.position);
 
-        var forwardDirection2 = new THREE.Vector3();
-        forwardDirection2.copy(handObj2.userData.forward);
-        forwardDirection2.multiplyScalar(-100);
-        pos2.add(forwardDirection2);
         pos2.y += 25;
         
         betMessages.push({
-                timeToDisappear: 3000,
+                timeToDisappear: 7000,
                 messageType: 2,
                 message: message2,
                 messagePos: pos2,
