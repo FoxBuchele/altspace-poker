@@ -583,6 +583,7 @@ function game(){
     cards:[]
   };
   this.currentBet = 0;
+  this.minRaise = 0;
   this.bettingPots = [new pot()];
   this.roundRecord = [];
 
@@ -817,33 +818,7 @@ game.prototype.resetSharedRotation = function(){
     this.headPosition.add(this.headOffset);
     this.sharedCardContainer.lookAt(this.headPosition);
 }
-/*
-game.prototype.winGame = function(pI){
-    var player = this.players[pI];
-    var messages = [];
-    
-    winMessage = player.name + " wins the tournament!";
-    var handObj = playerWins[i].player.hand;
-    var playerPos = new THREE.Vector3();
-    pos.copy(handObj.position);
-    
-    messages.push({
-        timeToDisappear: 10000,
-        messageType: 3,
-        message: winMessage,
-        messagePos: playerPos,
-        messageRot: handObj.quaternion
-    });
-    
-    //now set all the players back to -1
-    for(var i=0; i<this.players.length; i++){
-        this.players[i].state = -1;
-    }
-    cutoffTime = Date.now();
-    this.roundRecord = [this.roundRecord[0]];
-    
-    displayMessage(messages);
-}*/
+
 
 var betStep = function(game){
         toggleVisible(game.betCube, true);// game.betCube.visible = true;
@@ -851,7 +826,8 @@ var betStep = function(game){
         game.resetBetters();
         game.better = 0;
         game.currentBet = 0;
-        
+        game.minRaise = 0;
+    
         if(game.bettingOrder.length === 0){
             
             //do nothing, wait for authority to tell us to go to the next step
@@ -870,6 +846,7 @@ var betStep = function(game){
                 displayBlindMessages(firstMoney, secondMoney, [firstPlayer, secondPlayer]);
                 game.currentBet = game.smallBlind * 2;
                 game.firstRefusal = secondPlayer;
+                game.minRaise = game.smallBlind * 2;
                 game.nextBet();
                 makePot();
             }else{

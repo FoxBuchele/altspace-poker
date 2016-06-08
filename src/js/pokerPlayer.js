@@ -18,6 +18,10 @@ function player(whichPlayer){
   this.chipStack = {};
   this.joinButton;
   this.name = "Unknown";
+
+  //set to 'true' first time they try to raise
+  //so we can increment it by the minimum bet
+  this.raised = false;
 }
 
 player.prototype.myCardsFriendly = function(){
@@ -167,6 +171,7 @@ player.prototype.renderVisuals = function(timeSince){
         }else{
             this.currentBet = this.money;
         }
+        this.raised = false;
         this.bettingui.updateBet(this.currentBet);
             
             
@@ -310,7 +315,9 @@ player.prototype.bet = function(amount){
    this.totalBet += amount;
    this.money -= amount;
    if(this.betThisRound > theGame.currentBet){
-          theGame.currentBet = this.betThisRound;
+       theGame.minRaise = this.betThisRound - theGame.currentBet;   
+       theGame.currentBet = this.betThisRound;
+          
    }     
     
 }

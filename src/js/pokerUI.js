@@ -731,20 +731,59 @@ function bettingUIInteractions(pl, updateBet, buttonArray){
   this.addMoney = function addMoney(amount){
     console.log('got a click event');
     if(!this.allowedTo()){return false};
+    if(this.player.raised === false){                       //are we calling or raising?
+        if(amount < 0){
+            return;
+        }
+        if(amount < theGame.minRaise){                  //is our raise more than the last bet (right now just blinds?)
+            this.addMoney(theGame.minRaise);
+        }else{
+            this.player.currentBet += amount;
+            this.updateBet(this.player.currentBet);
+        }
+        this.player.raised = true;
+    }else{
+        
+        if((this.player.betThisRound + this.player.currentBet + amount) < (theGame.currentBet + theGame.minRaise)){ //are we trying to go lower than last bet (right now just blinds)
+            this.player.raised = false;
+            var callBet = (theGame.currentBet - this.player.betThisRound);
+            this.player.currentBet = callBet;
+            this.updateBet(this.player.currentBet);
+            return;
+        }
+       
+        if(this.player.currentBet + amount <= this.player.money){   //do we have the funds
+        
+            this.player.currentBet+= amount;
+            this.updateBet(this.player.currentBet);
+        }
+        
+    }  
+    /*
     if(this.player.currentBet + amount <= this.player.money && (this.player.currentBet + amount) >= 0){ //this should be the min bet actually
-      if(this.player.betThisRound + this.player.currentBet + amount >= theGame.currentBet){
+      if(this.player.raised === false){
+         if(amount < theGame.smallBlind*2){
+             
+         }
+         this.player.raised = true;
+      }
+          
+      if(this.player.betThisRound + this.player.currentBet + amount >= (theGame.currentBet + (theGame.smallBlind*2))){
         this.player.currentBet += amount;
         this.updateBet(this.player.currentBet);
       }
+      
     }else{
       console.log('dont have the funds', this.player.currentBet + amount , (this.player.currentBet + amount) >= 0);
     }
+    */
   }
   
   this.allIn = function allIn(){ 
     if(!this.allowedTo()){return false};
     this.player.currentBet = this.player.money;
     this.updateBet(this.player.currentBet);
+    this.player.raised = true;
   }
   
   this.done = function done(){
