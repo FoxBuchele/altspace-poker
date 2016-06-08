@@ -314,8 +314,8 @@ player.prototype.bet = function(amount){
    this.betThisRound += amount;
    this.totalBet += amount;
    this.money -= amount;
+   theGame.minRaise = amount;
    if(this.betThisRound > theGame.currentBet){
-       theGame.minRaise = this.betThisRound - theGame.currentBet;   
        theGame.currentBet = this.betThisRound;
           
    }     
