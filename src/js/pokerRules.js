@@ -728,7 +728,11 @@ game.prototype.startBetting = function(){
     
   if(this.better === this.bettingOrder.length){ //&& (game.currentAuthority === globalUserId)){
     //check to see if the pot is light
-    var playersLeft = this.playersThatNeedToBet(this.better);
+    if(this.better > 0){
+        this.better -= 1;
+    }
+    
+    var playersLeft = this.playersThatNeedToBet(this.bettingOrder[this.better]);
     if(playersLeft.length != 0){
         //pot is light, make people bet that still need to
         this.bettingOrder = playersLeft;
