@@ -299,7 +299,7 @@ function processUpdates(newUpdates){
                 
                     var message = thisPlayer.name+" won by forfeit!";
                         var winMessage = new errorMessage({
-                                timeToDisappear: 5000,
+                                timeToDisappear: 10000,
                                 messageType: 2,
                                 message: message,
                                 pos: pos,
@@ -310,6 +310,7 @@ function processUpdates(newUpdates){
                         totalMoney += theGame.bettingPots[i].amount;
                     }
                     thisPlayer.money += totalMoney;
+                    thisPlayer.renderChips();
                     theGame.bettingPots = [];
                                     
                 break;

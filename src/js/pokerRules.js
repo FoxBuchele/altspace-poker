@@ -830,8 +830,8 @@ var betStep = function(game){
         game.resetBetters();
         game.better = 0;
         game.currentBet = 0;
-        game.minRaise = 0;
-    
+        game.minRaise = game.smallBlind * 2;
+
         if(game.bettingOrder.length === 0){
             
             //do nothing, wait for authority to tell us to go to the next step
@@ -850,7 +850,6 @@ var betStep = function(game){
                 displayBlindMessages(firstMoney, secondMoney, [firstPlayer, secondPlayer]);
                 game.currentBet = game.smallBlind * 2;
                 game.firstRefusal = secondPlayer;
-                game.minRaise = game.smallBlind * 2;
                 game.nextBet();
                 makePot();
             }else{
