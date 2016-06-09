@@ -733,10 +733,11 @@ game.prototype.startBetting = function(){
     }
     
     var playersLeft = this.playersThatNeedToBet(this.bettingOrder[this.better]);
+      this.bettingOrder = playersLeft;
+        this.better = 0;
     if(playersLeft.length != 0){
         //pot is light, make people bet that still need to
-        this.bettingOrder = playersLeft;
-        this.better = 0;
+        
         this.startBetting();
     }
   }else if(this.dealingOrder[this.bettingOrder[this.better]].state !== 3){
