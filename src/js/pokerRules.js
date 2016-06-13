@@ -634,7 +634,8 @@ game.prototype.resetBetters = function(){
   //sets the betting order to a list of the players that should be given the option to bet this round
     
   var bettingOrder = [];
-  for(var i=1; i<this.dealingOrder.length; i++){
+  for(var j=0; j<this.dealingOrder.length; j++){
+    var i= (this.dealer + j + 1)%this.dealingOrder.length;
     if(this.dealingOrder[i].state === 2 && this.dealingOrder[i].money > 0){// > 0 && this.dealingOrder[i].state <= 3){    //they're still in the game, but waiting
       this.dealingOrder[i].betThisRound = 0;
       bettingOrder.push(i);
@@ -647,11 +648,11 @@ game.prototype.resetBetters = function(){
       bettingOrder.push(0);
    }
     
-  if(bettingOrder.length > 1){  //if there's only one person to bet, don't need to shift the array
+  /*if(bettingOrder.length > 1){  //if there's only one person to bet, don't need to shift the array
       for(var i=0; i<this.dealer; i++){
-          bettingOrder.push(bettingOrder.shift());
+          //bettingOrder.push(bettingOrder.shift());
       }
-  }
+  }*/
   this.bettingOrder = bettingOrder;
 }
 
