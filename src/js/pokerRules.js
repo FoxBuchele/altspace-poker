@@ -634,7 +634,7 @@ game.prototype.resetBetters = function(){
   //sets the betting order to a list of the players that should be given the option to bet this round
     
   var bettingOrder = [];
-  for(var j=0; j<this.dealingOrder.length; j++){
+  for(var j=1; j<this.dealingOrder.length; j++){
     var i= (this.dealer + j + 1)%this.dealingOrder.length;
     if(this.dealingOrder[i].state === 2 && this.dealingOrder[i].money > 0){// > 0 && this.dealingOrder[i].state <= 3){    //they're still in the game, but waiting
       this.dealingOrder[i].betThisRound = 0;
