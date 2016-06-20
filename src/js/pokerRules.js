@@ -643,9 +643,9 @@ game.prototype.resetBetters = function(){
   }
   
   //now try to add the dealer
-  if(this.dealingOrder[0].state === 2 && this.dealingOrder[0].money > 0){ //they're still in the game, but waiting
-      this.dealingOrder[0].betThisRound = 0;
-      bettingOrder.push(0);
+  if(this.dealingOrder[this.dealer].state === 2 && this.dealingOrder[this.dealer].money > 0 ){ //they're still in the game, but waiting
+      this.dealingOrder[this.dealer].betThisRound = 0;
+      bettingOrder.push(this.dealer);
    }
     
   /*if(bettingOrder.length > 1){  //if there's only one person to bet, don't need to shift the array
@@ -677,6 +677,7 @@ game.prototype.playersThatNeedToBet = function(fromIndex){
 
 game.prototype.resetDealers = function(){
   console.log('reseting dealers'); 
+   var prevDealer = this.dealingOrder[this.dealer];
    var order = this.players.slice();
     this.dealingOrder = [];
     
@@ -686,6 +687,9 @@ game.prototype.resetDealers = function(){
         if(order[i].state > -1){
             this.dealingOrder.push(order[i]);
         }
+    }
+    if(prevDealer !== this.dealingOrder[this.dealer]){
+        this.dealer = this.dealingOrder.indexOf(prevDealer);
     }
 }
 
@@ -1182,7 +1186,7 @@ var texasHoldEm = {
                     game.dealingOrder[i].state = -3;
 
                     if(i === game.dealer){
-                        game.dealer--;  //if this person folds out, pretend like the person right before them was the dealer when we rotate
+                        game.dealer--;  //if this person folds out, pretend like the person right before them was the dealer when we rotate     NOTE: this did not work
                     }
                   }
                 }

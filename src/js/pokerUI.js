@@ -393,9 +393,25 @@ var betImg = {
   img: document.createElement('img'),
   outImg: document.createElement('img')
 };
-betImg.outImg.src = "assets/betUI-bet2.png";
-betImg.img.src = "assets/betUI-bet.png";
+betImg.img.src = "assets/betUI-check.png";
 betImg.threeMat = new THREE.MeshBasicMaterial({map:new THREE.Texture(betImg.img)});
+
+var raiseImg = {
+  img: document.createElement('img'),
+  outImg: document.createElement('img')
+};
+raiseImg.img.src = "assets/betUI-raise.png";
+raiseImg.threeMat = new THREE.MeshBasicMaterial({map:new THREE.Texture(raiseImg.img)});
+
+
+var callImg = {
+  img: document.createElement('img'),
+  outImg: document.createElement('img')
+};
+callImg.img.src = "assets/betUI-call.png";
+callImg.threeMat = new THREE.MeshBasicMaterial({map:new THREE.Texture(callImg.img)});
+
+
 
 var foldImg = {
   img: document.createElement('img'),
@@ -501,19 +517,28 @@ function bettingUI(player){
 
       //make bet, fold, all in buttons
 
-      var ctrlBet = new THREE.Mesh(new THREE.PlaneGeometry(17.2, 25.6), betImg.threeMat);
+      var ctrlBet = new THREE.Mesh(new THREE.PlaneGeometry(17.2, 25.6), betImg.threeMat);   //check
+      var ctrlRaise = new THREE.Mesh(new THREE.PlaneGeometry(17.2, 25.6), raiseImg.threeMat);   //raise
+      var ctrlCall = new THREE.Mesh(new THREE.PlaneGeometry(17.2, 25.6), callImg.threeMat);    //call
+
       var ctrlFold = new THREE.Mesh(new THREE.PlaneGeometry(17.2, 12.8), foldImg.threeMat);
       var ctrlIn = new THREE.Mesh(new THREE.PlaneGeometry(17.2, 12.8), inImg.threeMat);
       ctrlFold.position.set(-17.2, -6.4, 0);
       ctrlIn.position.set(17.2, -6.4, 0);
 
       var ctrlHolder = new THREE.Object3D();
-      ctrlHolder.add(ctrlBet)
-      ctrlHolder.add(ctrlFold)
-      ctrlHolder.add(ctrlIn)
-
-      ctrlButtonArray = [ctrlFold, ctrlBet, ctrlIn];
-
+      ctrlHolder.add(ctrlBet);
+      ctrlHolder.add(ctrlRaise);
+      ctrlHolder.add(ctrlCall);
+      ctrlHolder.add(ctrlFold);
+      ctrlHolder.add(ctrlIn);
+      
+      this.betMesh = ctrlBet;
+      this.raiseMesh = ctrlRaise;
+      this.callMesh = ctrlCall;    
+    
+      ctrlButtonArray = [ctrlFold, ctrlBet, ctrlRaise, ctrlCall, ctrlIn];
+      
       ctrlHolder.position.set(0, 44, 0);
       ctrlHolder.scale.set(1.15, 1.15, 1.15);
       this.mesh.add(ctrlHolder);
@@ -537,6 +562,14 @@ function bettingUI(player){
     
 }
 
+bettingUI.prototype.toggleBetUI = function(showMesh){
+    toggleVisible(this.betMesh, false);
+    toggleVisible(this.raiseMesh, false);
+    toggleVisible(this.callMesh, false);
+    
+    toggleVisible(showMesh, true);
+}
+
 bettingUI.prototype.updateBet = function(amount){ 
        this.textArea.clearRect(0, 0, 250, 60);
        this.textArea.fillText("$"+amount, this.element.width/2, this.fontPadding);
@@ -547,8 +580,10 @@ bettingUI.prototype.updateBet = function(amount){
 function chipCount(player){
     
     this.canvasEl = document.createElement('canvas');
-    this.canvasEl.width = 218;
+    this.canvasEl.width = 400;
     this.canvasEl.height = 63;
+    
+    this.player = player;
     
     this.textArea = this.canvasEl.getContext('2d');
     
@@ -577,12 +612,14 @@ function chipCount(player){
 }
 
 chipCount.prototype.updateMoney = function(amount){
-    this.textArea.clearRect(0, 0, 250, 63);
-    this.textArea.fillText("$"+amount, this.canvasEl.width/2, this.fontPadding);
+    this.textArea.clearRect(0, 0, 400, 63);
+    this.textArea.fillText("Current Bet: $"+theGame.currentBet+"     $"+amount, this.canvasEl.width/2, this.fontPadding);
     this.material.map.needsUpdate = true;
     this.material.needsUpdate = true;
     
 }
+
+
 
 function dealerChip(player){
     this.canvasEl = document.createElement('canvas');
@@ -716,12 +753,22 @@ function bettingUIInteractions(pl, updateBet, buttonArray){
              that.fold();
            }
          })(this));
-         this.ctrlArray[1].addEventListener('cursordown', (function(that){
+         this.ctrlArray[1].addEventListener('cursordown', (function(that){  //the check button
            return function(t){
              that.done();
            }
          })(this));
-         this.ctrlArray[2].addEventListener('cursordown', (function(that){
+          this.ctrlArray[2].addEventListener('cursordown', (function(that){ //the raise button
+           return function(t){
+             that.done();
+           }
+         })(this));
+          this.ctrlArray[3].addEventListener('cursordown', (function(that){ //the call button
+           return function(t){
+             that.done();
+           }
+         })(this));
+         this.ctrlArray[4].addEventListener('cursordown', (function(that){
            return function(t){
              that.allIn();
            }
@@ -747,7 +794,7 @@ function bettingUIInteractions(pl, updateBet, buttonArray){
             this.updateBet(this.player.currentBet);
         }        
         this.player.raised = true;
-
+        this.player.bettingui.toggleBetUI(this.player.bettingui.raiseMesh);
     }else{
         
         if((this.player.betThisRound + this.player.currentBet + amount) < (theGame.currentBet + theGame.minRaise)){ //are we trying to go lower than last bet
@@ -755,6 +802,13 @@ function bettingUIInteractions(pl, updateBet, buttonArray){
             var callBet = (theGame.currentBet - this.player.betThisRound);
             this.player.currentBet = callBet;
             this.updateBet(this.player.currentBet);
+            
+            if(this.player.currentBet > 0){
+                this.player.bettingui.toggleBetUI(this.player.bettingui.callMesh);   //calling
+            }else{
+                this.player.bettingui.toggleBetUI(this.player.bettingui.betMesh);   //checking
+            }
+            
             return;
         }
        

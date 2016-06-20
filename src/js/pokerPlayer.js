@@ -171,9 +171,15 @@ player.prototype.renderVisuals = function(timeSince){
         }else{
             this.currentBet = this.money;
         }
+        if(this.currentBet > 0){
+           this.bettingui.toggleBetUI(this.bettingui.callMesh);
+        }else{
+           this.bettingui.toggleBetUI(this.bettingui.betMesh);
+        }
         this.raised = false;
         this.bettingui.updateBet(this.currentBet);
-            
+        this.chipCount.updateMoney(this.money);     //to show the current bet amount
+
             
         //theGame.betCube.visible = true;
         theGame.betCube.position.copy(this.hand.position);
@@ -314,7 +320,9 @@ player.prototype.bet = function(amount){
    this.betThisRound += amount;
    this.totalBet += amount;
    this.money -= amount;
-   theGame.minRaise = amount;
+   if(theGame.minRaise < amount){
+          theGame.minRaise = amount;
+   }
    if(this.betThisRound > theGame.currentBet){
        theGame.currentBet = this.betThisRound;
           
