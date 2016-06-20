@@ -46,6 +46,8 @@ player.prototype.renderVisuals = function(timeSince){
         toggleVisible(this.hand, false);
         toggleVisible(this.chipCount.mesh, false);
         toggleVisible(this.dealerChip.mesh, false);
+        toggleVisible(this.dealerUI.mesh, false);
+
         toggleVisible(this.joinButton.mesh, false);
             
         break;
@@ -90,6 +92,7 @@ player.prototype.renderVisuals = function(timeSince){
         }
         toggleVisible(this.hand, true);
         toggleVisible(this.dealerChip.mesh, false);
+        toggleVisible(this.dealerUI.mesh, false);
 
         toggleVisible(this.joinButton.mesh, true);
         toggleVisible(this.chipCount.mesh, false);

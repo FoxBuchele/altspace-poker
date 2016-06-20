@@ -112,7 +112,45 @@ var basicMat = new THREE.MeshBasicMaterial({color: "#FFFFFF"});
 
 
 
+/*
 
+
+window.onload = init;
+var context;
+var bufferLoader;
+
+function init() {
+  // Fix up prefixing
+  window.AudioContext = window.AudioContext || window.webkitAudioContext;
+  context = new AudioContext();
+
+  bufferLoader = new BufferLoader(
+    context,
+    [
+      '../sounds/hyper-reality/br-jam-loop.wav',
+      '../sounds/hyper-reality/laughter.wav',
+    ],
+    finishedLoading
+    );
+
+  bufferLoader.load();
+}
+
+function finishedLoading(bufferList) {
+  // Create two sources and play them both together.
+  var source1 = context.createBufferSource();
+  var source2 = context.createBufferSource();
+  source1.buffer = bufferList[0];
+  source2.buffer = bufferList[1];
+
+  source1.connect(context.destination);
+  source2.connect(context.destination);
+  source1.start(0);
+  source2.start(0);
+}
+
+
+*/
 
 
 
@@ -123,6 +161,8 @@ function ready(firstInstance) {
     for(var i=0; i<6; i++){
        theGame.players.push(new player(i));
     }
+    
+    setupSounds();
     
     
    // window.setTimeout(function(){
@@ -211,6 +251,149 @@ function ready(firstInstance) {
 } 
 
 
+function soundEngines(){
+    this.sounds = {};
+    this.context;
+    this.soundSource;
+    this.muted;
+    this.nextSound = false;
+    this.playing = false;
+    this.bufferLoader;
+}
+
+soundEngines.prototype.bufferLoaders = function BufferLoader(context, urlList, callback) {
+  this.context = context;
+  this.urlList = urlList;
+  this.onload = callback;
+  this.bufferList = new Array();
+  this.loadCount = 0;
+  this.volume = context.createGain();
+  this.volume.connect(context.destination);
+
+  this.volume.gain.value = 0.2;
+}
+
+soundEngines.prototype.bufferLoaders.prototype.loadBuffer = function(url, index) {
+  // Load buffer asynchronously
+  var request = new XMLHttpRequest();
+  request.open("GET", url, true);
+  request.responseType = "arraybuffer";
+
+  var loader = this;
+
+  request.onload = function() {
+    // Asynchronously decode the audio file data in request.response
+    loader.context.decodeAudioData(
+      request.response,
+      function(buffer) {
+        if (!buffer) {
+          alert('error decoding file data: ' + url);
+          return;
+        }
+        loader.bufferList[index] = buffer;
+        if (++loader.loadCount == loader.urlList.length)
+          loader.onload(loader.bufferList);
+      },
+      function(error) {
+        console.error('decodeAudioData error', error);
+      }
+    );
+  }
+
+  request.onerror = function() {
+    alert('BufferLoader: XHR error');
+  }
+
+  request.send();
+}
+
+soundEngines.prototype.bufferLoaders.prototype.load = function() {
+  for (var i = 0; i < this.urlList.length; ++i)
+  this.loadBuffer(this.urlList[i], i);
+}
+
+soundEngines.prototype.playSound = function(key){
+    if(this.playing){
+        this.nextSound = key;
+        return;
+    }
+    if(typeof this.sounds[key].buffer !== 'undefined'){
+        this.playing = true;
+        var source = soundEngine.context.createBufferSource();
+        source.buffer = this.sounds[key].buffer;
+        //source.connect(this.context.destination);
+        source.connect(this.bufferLoader.volume);
+        source.start(0);
+        //this.soundSource.buffer = this.sounds[key].buffer;
+        //this.soundSource.connect(this.context.destination);
+        //this.soundSource.start(0);
+        window.setTimeout(function(){
+            soundEngine.playing = false;
+            if(soundEngine.nextSound !== false){
+                soundEngine.playSound(soundEngine.nextSound);
+                soundEngine.nextSound = false;
+            }
+        }, this.sounds[key].duration);
+    }
+    
+}
+
+var soundEngine = new soundEngines();
+
+function setupSounds(){
+    
+    soundEngine.sounds.winHand = {url:"assets/Audio/OculusAudioPack/sting_victory_electronic.wav"};
+    soundEngine.sounds.loseShowdown = {url:"assets/Audio/OculusAudioPack/sting_loss_electric.wav"};
+    soundEngine.sounds.loseHand = {url:"assets/Audio/OculusAudioPack/ui_casual_musical_back.wav"};
+    soundEngine.sounds.yourCall = {url:"assets/Audio/OculusAudioPack/ui_casual_musical_error.wav"};
+    soundEngine.sounds.yourCheck = {url:"assets/Audio/OculusAudioPack/ui_casual_musical_confirm.wav"};
+    soundEngine.sounds.busted = {url:"assets/Audio/OculusAudioPack/sting_loss_mallet.wav"};
+    soundEngine.sounds.totalVictory = {url:"assets/Audio/OculusAudioPack/sting_victory_mallet.wav"};
+    
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+    soundEngine.context = new AudioContext();
+    
+    var assetList = [];
+    var soundKeys = Object.keys(soundEngine.sounds);
+    for(var i=0; i<soundKeys.length; i++){
+        assetList.push(soundEngine.sounds[soundKeys[i]].url);
+    }
+    
+    var bufferLoader = new soundEngine.bufferLoaders(
+        soundEngine.context,
+        assetList,
+        finishedLoading
+        );
+
+    bufferLoader.load();
+    soundEngine.bufferLoader = bufferLoader;
+
+
+    function finishedLoading(bufferList) {
+        
+      for(var i=0; i<soundKeys.length; i++){
+          //var source = soundEngine.context.createBufferSource();
+         // source.buffer = bufferList[i];
+          soundEngine.sounds[soundKeys[i]].buffer = bufferList[i];
+      }
+        
+      /*
+      // Create two sources and play them both together.
+      var source1 = soundEngine.context.createBufferSource();
+      var source2 = soundEngine.context.createBufferSource();
+      source1.buffer = bufferList[0];
+      source2.buffer = bufferList[1];
+
+      source1.connect(soundEngine.context.destination);
+      source2.connect(soundEngine.context.destination);
+      source1.start(0);
+      source2.start(0);
+      */
+    }
+    
+    
+
+}
 
 
 
@@ -602,6 +785,7 @@ function main(){
     
 	theGame.logic = texasHoldEm;
     setTimeout(checkForDoneBetting, 1000);
+    
     //render first set of visuals
     updatePlayers(0);
     

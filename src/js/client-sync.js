@@ -42,6 +42,7 @@ function getSafePlayer(thePlayer, important){
     player.chipStack = null;
     player.joinButton = null; 
     player.dealerChip = null;
+    player.dealerUI = null;
     player.hand = null;
     player.startGame = null;
     player.prevState = null;
@@ -210,9 +211,12 @@ function processUpdates(newUpdates){
                 theGame.dealer = data.dealer;
                 for(var i=0; i<theGame.players.length; i++){
                     toggleVisible(theGame.players[i].dealerChip.mesh, false);
+
                 }
 
                 toggleVisible(theGame.dealingOrder[theGame.dealer].dealerChip.mesh, true);
+                toggleVisible(theGame.dealingOrder[theGame.dealer].dealerUI.mesh, false);
+
                 /*
                 var words = theGame.players[theGame.dealer].name + " dealt a new hand!";
                 var pos = new THREE.Vector3();
@@ -239,6 +243,18 @@ function processUpdates(newUpdates){
            /* case "waitingFor":
                 //data.toPlayer
                 break;*/
+            case "requestFinishBetting":
+                
+                if(data.authority === globalUserId && x === (newUpdates.length-1)){
+                    
+                    //only act if we're the authority and it's the last step
+                    theGame.better = 0;
+                    theGame.step++;
+                    theGame.runStep();
+                    
+                }
+                
+                break;
             case "playerBet":
                 
                 theGame.players[data.i].bet(data.amount);
@@ -458,7 +474,7 @@ function processUpdates(newUpdates){
                 }
                 
                  var sendingMessages = [];
-                        
+                 var winState = 0;     //0 is defeat, 1 is defeat at showdown, 2 is victory 
                     for(var i=0; i<playerWins.length; i++){
                         
                             //go through the rest of the playerWins array
@@ -484,10 +500,17 @@ function processUpdates(newUpdates){
 
                                 if(playerWins.length === 1){
                                   var message = winningPlayer.name+" won $"+splitAmount+" with "+playerWins[i].hand.name+"!";
+                                  
                                 }else{
                                    var message = winningPlayer.name+" split the pot for $"+splitAmount+" with "+playerWins[i].hand.name+"!";
                                 }
                                 
+                                //are we this player? if so, play sound.
+                                  //if not, also play sound
+                                  if(winningPlayer.spot === globalPlayerIndex){
+                                    didWin = 2;
+                                  }
+                                        
                         
                                 sendingMessages.push({
                                         timeToDisappear: 10000,
@@ -517,6 +540,9 @@ function processUpdates(newUpdates){
                                     }
                                     cardMessage += card.prototype.friendlyRepresentation.apply(winners[i].hands[j].cards[k]);
                                 }
+                                if(winners[i].players[j].spot === globalPlayerIndex && didWin === 0){
+                                    didWin = 1;
+                                }
                                 var pos2 = new THREE.Vector3();
                                 pos2.copy(pos);
                                 pos2.y += 50;
@@ -531,6 +557,21 @@ function processUpdates(newUpdates){
                         }
                         
                     }
+                    
+                    //0 is defeat, 1 is defeat at showdown, 2 is victory 
+                    switch(didWin){
+                        case 0:
+                            soundEngine.playSound("loseHand");
+                            break;
+                        case 1:
+                            soundEngine.playSound("loseShowdown");
+                            break;
+                        case 2:
+                            soundEngine.playSound("winHand");
+                            break;
+                    }
+                
+
                 
                 
                 

@@ -586,7 +586,8 @@ function game(){
   this.minRaise = 0;
   this.bettingPots = [new pot()];
   this.roundRecord = [];
-
+    
+  this.nudged = false;
     
   this.sharedCardContainer = new THREE.Object3D();
   this.headOffset = new THREE.Vector3(0, 300, 0);
@@ -719,11 +720,15 @@ game.prototype.nextBet = function(){
   //sets the state of the current player back to 'wait' (2) and sets state of next player to 'bet' (3)
     
   //if this player hasn't folded
-  if(this.dealingOrder[this.bettingOrder[this.better]].state !== 4){
-    //set them back to 'waiting' state
-    this.dealingOrder[this.bettingOrder[this.better]].state = 2;
+  if(this.bettingOrder.length > 0){
+      if(this.dealingOrder[this.bettingOrder[this.better]].state !== 4){
+        //set them back to 'waiting' state
+        this.dealingOrder[this.bettingOrder[this.better]].state = 2;
+      }
+      this.better++;
+  }else{
+      debugger;
   }
-  this.better++;
 
   this.startBetting();
 
@@ -747,6 +752,17 @@ game.prototype.startBetting = function(){
     }
   }else if(this.dealingOrder[this.bettingOrder[this.better]].state !== 3){
     this.dealingOrder[this.bettingOrder[this.better]].state = 3;
+      
+    //also plays a sound to let the user know it's time to do something
+      if(typeof this.currentAuthority !== 'undefined'){
+          if(this.dealingOrder[this.bettingOrder[this.better]].spot === globalPlayerIndex){
+              if(this.currentBet > 0){
+                soundEngine.playSound("yourCall");
+              }else{
+                soundEngine.playSound("yourCheck");
+              }
+          }
+      }
   }
 }
 
@@ -810,6 +826,8 @@ game.prototype.nextHand = function(){
     }
 
     toggleVisible(this.dealingOrder[this.dealer].dealerChip.mesh, true);
+    toggleVisible(theGame.dealingOrder[theGame.dealer].dealerUI.mesh, false);
+
     //start level
     setTimeout((function(tehGame){
         
@@ -837,7 +855,7 @@ var betStep = function(game){
         game.better = 0;
         game.currentBet = 0;
         game.minRaise = game.smallBlind * 2;
-
+        game.nudged = false;
         if(game.bettingOrder.length === 0){
             
             //do nothing, wait for authority to tell us to go to the next step
@@ -859,7 +877,8 @@ var betStep = function(game){
                 game.nextBet();
                 makePot();
             }else{
-                game.dealingOrder[game.bettingOrder[game.better]].state = 3;
+                game.startBetting();
+
             }
         }
     
@@ -880,10 +899,19 @@ function checkForDoneBetting(){
 function _checkForDoneBetting(){
     if(theGame.better === theGame.bettingOrder.length){        //should calculate 'active' players
         if(theGame.step !== -1 && theGame.logic.steps[theGame.step].execClient === betStep){
-            if(theGame.currentAuthority === globalUserId){
+            /*if(theGame.currentAuthority === globalUserId){
                 theGame.better = 0;
                 theGame.step++;
                 theGame.runStep();
+            }*/
+            if(globalUserId === theGame.dealingOrder[theGame.dealer].userId && theGame.nudged === false){
+                //show the step change UI
+                toggleVisible(theGame.dealingOrder[theGame.dealer].dealerChip.mesh, true);
+                window.setTimeout(function(){
+                    var dealMessage = new errorMessage({timeToDisappear:2000, messageType:1, message:"Click me to continue!",scale:0.4,pos:theGame.dealingOrder[theGame.dealer].dealerUI.mesh.getWorldPosition()});
+                }, 10);
+                
+                theGame.nudged = true;
             }
             return true;
         }
@@ -915,6 +943,8 @@ var texasHoldEm = {
         }
     
         toggleVisible(game.dealingOrder[game.dealer].dealerChip.mesh, true);
+        toggleVisible(game.dealingOrder[game.dealer].dealerUI.mesh, false);
+
         game.start();
         //since only the dealer will do this step, we can assume the globalUserId is the dealer
         

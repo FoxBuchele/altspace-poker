@@ -634,7 +634,6 @@ function dealerChip(player){
     this.textArea.textAlign = "center";
     this.textArea.fillStyle = "rgba(0,0,0, 1)";
     this.textArea.fillText("D", this.canvasEl.width/2, this.fontPadding);
-    
     this.dMaterial = new THREE.MeshBasicMaterial({map: new THREE.Texture(this.canvasEl)})
     this.dMesh = new THREE.Mesh(new THREE.PlaneGeometry(this.canvasEl.width/4, this.canvasEl.height/4), this.dMaterial);
     this.dMaterial.transparent = true;
@@ -648,8 +647,50 @@ function dealerChip(player){
     this.dMesh.rotation.x -= Math.PI/2;
     player.hand.add(this.mesh);
     this.mesh.position.y -= 150;
-    this.mesh.position.x -= 50;
+    this.mesh.position.x -= 60;
     this.mesh.position.z -= 10;
+    
+    player.dealerUI = new advanceUI(this.mesh);
+
+    
+}
+
+function advanceUI(chip){
+    
+    //this.dMesh = new createMessage("Deal More Cards", 1, "down");
+    
+    //this.dMesh.scale.set(0.5, 0.5, 0.5);
+    
+    //this.dMesh.position.y += 30;
+    
+    var cardBack = theGame.models.CardBack.clone();
+    cardBack.scale.set(200, 200, 200);
+    var cardBack2 = theGame.models.CardBack.clone();
+    cardBack2.scale.set(200, 200, 200);
+    var card = new THREE.Object3D();
+    card.add(cardBack);
+    card.add(cardBack2);
+    
+    //card.add(this.dMesh);
+
+    cardBack2.rotation.y = Math.PI;
+    this.mesh = card;
+    chip.add(card);
+    
+    card.position.y += 20;
+    card.position.z -= 10;
+    card.rotation.x -= Math.PI/6;
+    
+    card.addBehaviors({awake: function(obj){
+        obj.addEventListener('cursordown', function(){
+            toggleVisible(card, false);
+			sendUpdate({authority:theGame.currentAuthority}, "requestFinishBetting", {thenUpdate: true});
+        })
+    }});
+    card.updateBehaviors(0);
+    
+    
+    
 }
 
 
@@ -967,6 +1008,8 @@ function startGame(player){
         }
     
         toggleVisible(theGame.dealingOrder[theGame.dealer].dealerChip.mesh, true);
+        toggleVisible(theGame.dealingOrder[theGame.dealer].dealerUI.mesh, false);
+
         theGame.step = 0;//do the initialization in the game controller
         theGame.timeBlindStarted = Date.now();
         //sendUpdate({stepUpdate: 0}, "startGame");
