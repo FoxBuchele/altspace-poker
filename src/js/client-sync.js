@@ -472,9 +472,8 @@ function processUpdates(newUpdates){
                         
                     
                 }
-                
                  var sendingMessages = [];
-                 var winState = 0;     //0 is defeat, 1 is defeat at showdown, 2 is victory 
+                 var didWin = 0;     //0 is defeat, 1 is defeat at showdown, 2 is victory 
                     for(var i=0; i<playerWins.length; i++){
                         
                             //go through the rest of the playerWins array
