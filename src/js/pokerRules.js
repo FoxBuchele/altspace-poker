@@ -1184,11 +1184,12 @@ var texasHoldEm = {
                         awardMoney(winningPlayers);
                         
                     }*/
-                
+                    
+                    
 
-                    game.step = 10;
+                    //game.step = 10;
 
-                    game.runStep(); //kick out players without money, transfer control
+                    //game.runStep(); //kick out players without money, transfer control
                 
                 
 			}
@@ -1202,7 +1203,7 @@ var texasHoldEm = {
         
         
             
-            setTimeout(function(){
+           // setTimeout(function(){
                 var activePlayers = 0;
                 var activeIndex = -1;
                 game.resetCards();
@@ -1240,7 +1241,7 @@ var texasHoldEm = {
                 }else{
                     game.winGame(activeIndex);
                 }
-            }, 10000);
+           // }, 10000);
            
             //cutoffTime = Date.now();
             //sendUpdate({transferControl: game.dealingOrder[game.dealer].spot, endstatePlayers: playerStates}, "transferControl", {thenUpdate: true});

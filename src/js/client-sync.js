@@ -581,7 +581,14 @@ function processUpdates(newUpdates){
                     theGame.step = 9;
                     displayMessage(sendingMessages);
                     //theGame.resetCards();
-            
+                    if(globalUserId === theGame.dealingOrder[theGame.dealer].userId){
+                        //show the step change UI
+                        toggleVisible(theGame.dealingOrder[theGame.dealer].dealerChip.mesh, true);
+                        window.setTimeout(function(){
+                            var dealMessage = new errorMessage({timeToDisappear:2000, messageType:1, message:"Click me to continue!",scale:0.4,pos:theGame.dealingOrder[theGame.dealer].dealerUI.mesh.getWorldPosition()});
+                        }, 10);
+
+                    }
                     
                 
                 break;
