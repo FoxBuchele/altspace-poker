@@ -904,6 +904,7 @@ function _checkForDoneBetting(){
                 theGame.step++;
                 theGame.runStep();
             }*/
+            toggleVisible(theGame.betCube, false);
             if(globalUserId === theGame.dealingOrder[theGame.dealer].userId && theGame.nudged === false){
                 //show the step change UI
                 toggleVisible(theGame.dealingOrder[theGame.dealer].dealerChip.mesh, true);

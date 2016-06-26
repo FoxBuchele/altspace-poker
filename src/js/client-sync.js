@@ -589,7 +589,7 @@ function processUpdates(newUpdates){
                                 timeToDisappear:3000, 
                                 scale:new THREE.Vector3(0.4, 0.4, 0.4),
                                 messageType:1, 
-                                message:"Click me to continue!",
+                                message:"Click to start next hand!",
                                 messagePos:theGame.dealingOrder[theGame.dealer].dealerUI.mesh.getWorldPosition(),
                                 arrowSide: "down",
                                 moveDirection: new THREE.Vector3(0, 50, 0)
