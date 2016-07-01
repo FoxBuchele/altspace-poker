@@ -328,6 +328,28 @@ function processUpdates(newUpdates){
                     thisPlayer.money += totalMoney;
                     thisPlayer.renderChips();
                     theGame.bettingPots = [];
+                
+                 theGame.step = 9;
+                
+                 if(globalUserId === theGame.dealingOrder[theGame.dealer].userId){
+                        //show the step change UI
+                        toggleVisible(theGame.dealingOrder[theGame.dealer].dealerChip.mesh, true);
+                        window.setTimeout(function(){
+                            displayMessageSingle({
+                                timeToDisappear:3000, 
+                                scale:new THREE.Vector3(0.4, 0.4, 0.4),
+                                messageType:1, 
+                                message:"Click to start next hand!",
+                                messagePos:theGame.dealingOrder[theGame.dealer].dealerUI.mesh.getWorldPosition(),
+                                arrowSide: "down",
+                                moveDirection: new THREE.Vector3(0, 50, 0)
+                            });
+                            
+
+                        }, 10);
+
+                    }
+                
                                     
                 break;
             case "totalVictory":

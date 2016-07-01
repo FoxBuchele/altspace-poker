@@ -460,11 +460,11 @@ player.prototype.fold = function(){
 
                 if(potentialPlayers.length === 1){
                     theGame.better = 0;
-                    theGame.step = 10;
+                    //theGame.step = 10;
                     if(theGame.currentAuthority === globalUserId){
                         setTimeout(function(){
                              sendUpdate({winnerByForfeit: getSafePlayer(potentialPlayers[0])}, "playerWinByForfeit", {thenUpdate: true});
-                             theGame.runStep();
+                            // theGame.runStep();
                         }, 0);
                     }
                       
